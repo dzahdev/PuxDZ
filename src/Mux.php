@@ -124,12 +124,14 @@ class Mux implements IteratorAggregate
     }
 
     /**
-     * Mount a Mux or a Controller object on a specific path.
-     *
-     * @param string         $pattern
+     * Mount routes on a path. The target is a Mux, an Expandable (for example an
+     * ExpandableController, mounted through expand()), or a builder callable that receives a
+     * new Mux to fill; a Closure builder may instead return the Mux to mount.
      */
-    public function mount($pattern, \Pux\Mux|\Pux\Controller\Controller $mux, array $options = [])
+    public function mount(string $pattern, Mux|Expandable|Closure|callable $target, array $options = [])
     {
+        $mux = $target;
+
         // Save the mount path in options array
         $options['mount_path'] = $pattern;
 

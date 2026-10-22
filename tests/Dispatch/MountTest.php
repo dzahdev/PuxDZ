@@ -2,7 +2,6 @@
 
 namespace Pux\Tests\Dispatch;
 
-use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Pux\Mux;
 
@@ -110,7 +109,6 @@ final class MountTest extends TestCase
     /**
      * @see PLAN-port-php82.md R1
      */
-    #[Group('known-defect')]
     public function test_mount_of_closure_that_fills_given_mux_adds_its_routes(): void
     {
         $mux = new Mux();
@@ -127,7 +125,6 @@ final class MountTest extends TestCase
     /**
      * @see PLAN-port-php82.md R1
      */
-    #[Group('known-defect')]
     public function test_mount_of_closure_that_returns_new_mux_adds_routes_of_returned_mux(): void
     {
         $mux = new Mux();

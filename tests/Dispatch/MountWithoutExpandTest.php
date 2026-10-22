@@ -70,7 +70,6 @@ final class MountWithoutExpandTest extends TestCase
     /**
      * @see PLAN-port-php82.md R1
      */
-    #[Group('known-defect')]
     public function test_mount_of_closure_with_expand_disabled_dispatches_to_routes_it_added(): void
     {
         $mux = $this->muxWithoutExpand();
