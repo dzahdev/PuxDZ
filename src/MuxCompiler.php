@@ -53,29 +53,18 @@ class MuxCompiler
 
     public static function sort_routes($a, $b)
     {
+        // PCRE routes first, each group ordered by descending length of the compiled
+        // expression (PCRE) or of the path (static). Equal lengths compare as 0; usort is
+        // stable since PHP 8.0, so such routes keep their order of addition.
         if ($a[0] && $b[0]) {
-            $a_len = strlen((string) $a[3]['compiled']);
-            $b_len = strlen((string) $b[3]['compiled']);
-            if ($a_len == $b_len) {
-                return 0;
-            } elseif ($a_len > $b_len) {
-                return -1;
-            } else {
-                return 1;
-            }
+            return strlen((string) $b[3]['compiled']) <=> strlen((string) $a[3]['compiled']);
         } elseif ($a[0]) {
             return -1;
         } elseif ($b[0]) {
             return 1;
         }
 
-        if (strlen((string) $a[1]) > strlen((string) $b[1])) {
-            return -1;
-        } elseif (strlen((string) $a[1]) == strlen((string) $b[1])) {
-            return 0;
-        } else {
-            return 1;
-        }
+        return strlen((string) $b[1]) <=> strlen((string) $a[1]);
     }
 
     /**

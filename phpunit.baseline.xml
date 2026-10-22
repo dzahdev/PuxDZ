@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <files version="1">
  <file path="src/Mux.php">
-  <line number="347" hash="34a3e19cedfd591f3f0a1b824149dbe11cd43876">
+  <line number="328" hash="34a3e19cedfd591f3f0a1b824149dbe11cd43876">
    <issue><![CDATA[Pux\Mux::match(): Implicitly marking parameter $routeRequest as nullable is deprecated, the explicit nullable type must be used instead]]></issue>
   </line>
-  <line number="427" hash="81533173c00520f3462416b53c222c0f9fa0ca08">
+  <line number="408" hash="81533173c00520f3462416b53c222c0f9fa0ca08">
    <issue><![CDATA[Pux\Mux::dispatch(): Implicitly marking parameter $routeRequest as nullable is deprecated, the explicit nullable type must be used instead]]></issue>
   </line>
  </file>
