@@ -274,11 +274,12 @@ class RouteRequest implements RouteRequestMatcher
         $self->serverParameters = isset($env['_SERVER']) ? $env['_SERVER'] : $env;
         $self->headers = self::headersFromServer($self->serverParameters);
 
-        $self->parameters = $env['_REQUEST'];
-        $self->queryParameters = $env['_GET'];
-        $self->bodyParameters = $env['_POST'];
-        $self->cookieParameters = $env['_COOKIE'];
-        $self->sessionParameters = $env['_SESSION'];
+        // A flat server array has none of these keys: each one is optional.
+        $self->parameters = $env['_REQUEST'] ?? [];
+        $self->queryParameters = $env['_GET'] ?? [];
+        $self->bodyParameters = $env['_POST'] ?? [];
+        $self->cookieParameters = $env['_COOKIE'] ?? [];
+        $self->sessionParameters = $env['_SESSION'] ?? [];
 
         return $env['__request_object'] = $self;
     }

@@ -2,7 +2,6 @@
 
 namespace Pux\Tests\RouteRequest;
 
-use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Pux\RouteRequest;
 
@@ -91,12 +90,11 @@ final class PredicateTest extends TestCase
     }
 
     /**
-     * Fails today with 5 warnings "Undefined array key" for _REQUEST, _GET, _POST, _COOKIE and
-     * _SESSION.
+     * Failed before the L12 fix with 5 warnings "Undefined array key" for _REQUEST, _GET, _POST,
+     * _COOKIE and _SESSION.
      *
      * @see PLAN-port-php82.md L12
      */
-    #[Group('known-defect')]
     public function test_create_from_env_without_superglobal_keys_reads_path_and_method(): void
     {
         $request = RouteRequest::createFromEnv(['REQUEST_METHOD' => 'GET', 'PATH_INFO' => '/z']);
