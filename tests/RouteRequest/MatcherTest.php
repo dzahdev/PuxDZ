@@ -73,4 +73,12 @@ final class MatcherTest extends TestCase
     {
         self::assertTrue(RouteRequest::create('GET', '/', ['QUERY_STRING' => 'page=2'])->queryStringMatch('#page=\d#'));
     }
+
+    /**
+     * @see PLAN-port-php82.md L1
+     */
+    public function test_query_string_match_with_non_matching_regex_returns_false(): void
+    {
+        self::assertFalse(RouteRequest::create('GET', '/', ['QUERY_STRING' => 'page=2'])->queryStringMatch('#^sort=#'));
+    }
 }

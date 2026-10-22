@@ -27,7 +27,6 @@ final class PredicateTest extends TestCase
     /**
      * @see PLAN-port-php82.md L1
      */
-    #[Group('known-defect')]
     public function test_path_like_with_text_absent_from_path_returns_false(): void
     {
         self::assertFalse(RouteRequest::create('GET', '/foo', ['HTTP_HOST' => 'example.com'])->pathLike('zzz'));
@@ -36,7 +35,6 @@ final class PredicateTest extends TestCase
     /**
      * @see PLAN-port-php82.md L1
      */
-    #[Group('known-defect')]
     public function test_path_match_with_non_matching_regex_returns_false(): void
     {
         self::assertFalse(RouteRequest::create('GET', '/foo', ['HTTP_HOST' => 'example.com'])->pathMatch('#^/bar$#'));
@@ -45,7 +43,6 @@ final class PredicateTest extends TestCase
     /**
      * @see PLAN-port-php82.md L1
      */
-    #[Group('known-defect')]
     public function test_host_match_with_non_matching_regex_returns_false(): void
     {
         self::assertFalse(RouteRequest::create('GET', '/foo', ['HTTP_HOST' => 'example.com'])->hostMatch('#^nothing$#'));
