@@ -5,6 +5,7 @@ use ReflectionObject;
 use Pux\Mux;
 use Pux\Handler;
 use Pux\RouteRequest;
+use Pux\Exception\MissingArgument;
 
 class Controller implements Handler
 {
@@ -48,11 +49,11 @@ class Controller implements Handler
             $n = $rp->getName();
             if (isset($vars[ $n ])) {
                 $arguments[] = $vars[ $n ];
-            } else if (isset($route[3]['default'][ $n ])
-                            && $default = $route[3]['default'][ $n ]) {
+            } else if (isset($this->matchedRoute[3]['default'][ $n ])
+                            && $default = $this->matchedRoute[3]['default'][ $n ]) {
                 $arguments[] = $default;
-            } else if (!$rp->isOptional() && !$rp->allowsNull()) {
-                throw new Exception('parameter is not defined.');
+            } else if (!$rp->isOptional()) {
+                throw MissingArgument::forParameter($n, static::class . '::' . $action);
             }
         }
 

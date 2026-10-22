@@ -2,7 +2,6 @@
 
 namespace Pux\Tests\RouteExecutor;
 
-use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Pux\Tests\Fixtures\GreetingController;
 
@@ -13,12 +12,11 @@ use Pux\Tests\Fixtures\GreetingController;
 final class ControllerCallTest extends TestCase
 {
     /**
-     * Fails today because Controller::call reads the undefined variable $route instead of the
-     * matched route and throws the unimported Exception class.
+     * Failed before the R2 fix: Controller::call read the undefined variable $route instead of
+     * the matched route and never reached the missing-argument branch for an untyped parameter.
      *
      * @see PLAN-port-php82.md R2
      */
-    #[Group('known-defect')]
     public function test_call_without_variable_for_required_parameter_throws_exception_naming_parameter(): void
     {
         $controller = new GreetingController();
