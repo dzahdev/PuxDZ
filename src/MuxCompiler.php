@@ -2,6 +2,7 @@
 
 namespace Pux;
 
+use Pux\Exception\InvalidCallback;
 use ReflectionClass;
 
 class MuxCompiler
@@ -99,13 +100,13 @@ class MuxCompiler
                 $class = $callback[0];
                 $method = $callback[1];
                 if (!class_exists($class, true)) {
-                    throw new Exception(sprintf('Controller %s does not exist.', $class));
+                    throw InvalidCallback::classNotFound($class);
                 }
 
                 // rebless a controller (extract this to common method)
                 $controller = new $class();
                 if (!method_exists($controller, $method)) {
-                    throw new Exception(sprintf('Method %s not found in controller %s.', $method, $class));
+                    throw InvalidCallback::methodNotFound($class, $method);
                 }
             }
         }

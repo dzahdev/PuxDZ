@@ -2,7 +2,6 @@
 
 namespace Pux\Tests\Export;
 
-use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Pux\Mux;
 use Pux\MuxCompiler;
@@ -99,12 +98,11 @@ final class CompileToFileTest extends TestCase
     }
 
     /**
-     * Fails today with Error 'Class "Pux\Exception" not found' (Exception is not imported in
-     * namespace Pux).
+     * Failed before the R4 fix with Error 'Class "Pux\Exception" not found' (Exception was not
+     * imported in namespace Pux).
      *
      * @see PLAN-port-php82.md R4
      */
-    #[Group('known-defect')]
     public function test_merge_with_callback_validation_rejects_route_to_unknown_controller(): void
     {
         $mux = new Mux();
