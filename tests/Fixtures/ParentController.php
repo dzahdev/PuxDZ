@@ -2,10 +2,10 @@
 
 namespace Pux\Tests\Fixtures;
 
-use Pux\Controller\ExpandableController;
-
-// Test fixture, moved from src/Builder/ControllerRouteBuilderTest.php in Stage 0 without changes to its body.
-class ParentController extends ExpandableController {
+// Test fixture for ControllerRouteBuilder::build. Stage 2: no longer extends
+// Pux\Controller\ExpandableController; build() reads only reflection and docblocks, and the
+// parent class cannot be loaded until Stage 1.
+class ParentController {
 
     /**
      *
