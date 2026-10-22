@@ -17,15 +17,13 @@
     </testsuites>
 
     <!--
-        Red tests are kept in two groups and excluded here, so that `composer test` is green:
-        known-defect     - fails because of a defect in the registry of PLAN-port-php82.md (ID in the docblock)
-        pending-stage-1  - cannot run until Stage 1 replaces Universal\Http\HttpRequest and PHPSGI\App
-        `composer test:red` runs only these groups, `composer test:all` runs everything.
+        Red tests are kept in the group known-defect and excluded here, so that `composer test` is
+        green: each fails because of a defect in the registry of PLAN-port-php82.md (ID in the
+        docblock). `composer test:red` runs only this group, `composer test:all` runs everything.
     -->
     <groups>
         <exclude>
             <group>known-defect</group>
-            <group>pending-stage-1</group>
         </exclude>
     </groups>
 

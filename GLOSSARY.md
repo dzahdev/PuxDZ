@@ -35,7 +35,7 @@ anything else a static route. A callback string of the form `Class:method` is sp
 
 A route with element `0 === false`. Element `1` is the literal path. `Mux::match()` accepts it
 when `$route[1] == $path`; when the callback is a submux reference (integer id, `Mux` instance or
-`PHPSGI\App` instance) it accepts a prefix match instead (`strncmp` on the length of
+`Pux\Handler` instance) it accepts a prefix match instead (`strncmp` on the length of
 `$route[1]`).
 
 ## PCRE route
@@ -158,6 +158,21 @@ A route registered with the `id` option. `Mux::getRoute($id)` returns it and `Mu
 $params)` builds a path from its source pattern: each `:name` is replaced by `$params['name']`,
 an optional group whose variables are not given is removed.
 
+## Handler
+
+An object implementing `Pux\Handler`: `call(array &$environment, array $response)`.
+`Pux\Controller\Controller` is one. A static route whose callback is a handler is matched by
+path prefix (see Static route). The interface replaces `App` of the former third-party package
+phpsgi/phpsgi with the same contract.
+
+## Route request
+
+A `Pux\RouteRequest`: request method, path, server parameters, headers and the parameter arrays
+(query, body, cookies, session) that the predicates (`pathMatch`, `hostEqual`,
+`matchConstraints` and others) test. Built by `RouteRequest::fromServer` from an array of the
+shape of `$_SERVER` (the superglobal itself only when no array is given), by `createFromEnv`
+from an environment array, or by `create($method, $path, $env)`.
+
 ## Route cache
 
 PHP code that rebuilds a `Mux`: `Mux::export()` returns `var_export($mux)`, evaluated through
@@ -167,17 +182,13 @@ its routes. In test names: "round trip" is export followed by `eval`.
 
 ## Test groups
 
-Red tests are kept in two PHPUnit groups that `phpunit.xml.dist` excludes, so that
-`composer test` stays green:
+Red tests are kept in the PHPUnit group `known-defect`, which `phpunit.xml.dist` excludes, so
+that `composer test` stays green. Such a test specifies behavior that fails today because of a
+defect in the registry; the docblock names the ID (`@see PLAN-port-php82.md L4`). The cycle that
+fixes the defect removes the group. (Until Stage 1 a second group, `pending-stage-1`, held the
+tests that could not load before the third-party parent classes were replaced.)
 
-- `known-defect`: the test specifies behavior that fails today because of a defect in the
-  registry; the docblock names the ID (`@see PLAN-port-php82.md L4`). The cycle that fixes the
-  defect removes the group.
-- `pending-stage-1`: the test cannot run before Stage 1 because it loads `Pux\RouteRequest` or
-  `Pux\Controller\Controller`, which depend on the removed `Universal\Http\HttpRequest` and
-  `PHPSGI\App`. A test can be in both groups.
-
-`composer test:red` runs only these groups, `composer test:all` runs every test.
+`composer test:red` runs only this group, `composer test:all` runs every test.
 
 ## Seam
 

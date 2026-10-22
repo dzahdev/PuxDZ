@@ -6,10 +6,11 @@ port. Each row is a starting point for one red -> green cycle; registry IDs refe
 registry of the port plan. "Test" names the Stage 2 test that already specifies the row, if any;
 a probe without a test becomes a red test at the start of its own cycle (ADR 0002).
 
-Since Stage 0 the third-party packages are gone: every call that loads `Pux\RouteRequest` or
-`Pux\Controller\Controller` now fails earlier with `Class "Universal\Http\HttpRequest" not found`
-or `Interface "PHPSGI\App" not found`. The "observed" column is the behavior with the packages
-present.
+Between Stage 0 and Stage 1 the third-party packages were gone and every call that loaded
+`Pux\RouteRequest` or `Pux\Controller\Controller` failed earlier with a class-not-found error.
+Stage 1 replaced them with `Pux\RouteRequest` without a parent and `Pux\Handler`. The "observed"
+column is the behavior at 30bc692 with the packages present. Closed in Stage 1: L1 (probe A), L2
+(probe G), L12 (probe R).
 
 | Probe | Seam | Input | Observed at 30bc692 | Expected | ID | Test |
 |---|---|---|---|---|---|---|
