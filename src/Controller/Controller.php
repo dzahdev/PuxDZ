@@ -5,6 +5,7 @@ use ReflectionObject;
 use Pux\Mux;
 use Pux\Handler;
 use Pux\RouteRequest;
+use Pux\Exception\InvalidCallback;
 use Pux\Exception\MissingArgument;
 
 class Controller implements Handler
@@ -119,7 +120,7 @@ class Controller implements Handler
     {
         $method = sprintf('%sAction', $action);
         if (! method_exists($this,$method)) {
-            throw new Exception(sprintf('Controller method %s does not exist.', $method));
+            throw InvalidCallback::methodNotFound(static::class, $method);
         }
 
         $reflectionObject = new ReflectionObject( $this );
