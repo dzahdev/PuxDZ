@@ -74,4 +74,19 @@ final class CreateFromEnvTest extends TestCase
             'Content-Length' => '2',
         ], $request->headers);
     }
+
+    /**
+     * The former code fell back to the path "/" with the comment "check path or throw
+     * exception"; no test specified that fallback.
+     */
+    public function test_create_from_env_without_path_info_and_request_uri_throws_exception_naming_them(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('PATH_INFO or REQUEST_URI');
+
+        RouteRequest::createFromEnv([
+            'REQUEST_METHOD' => 'GET',
+            '_REQUEST' => [], '_GET' => [], '_POST' => [], '_COOKIE' => [], '_SESSION' => [],
+        ]);
+    }
 }

@@ -235,9 +235,12 @@ class RouteRequest implements RouteRequestMatcher
 
     /**
      * Create request object from an environment array: a flat server array, or a globals-shaped
-     * array with the keys _SERVER, _REQUEST, _GET, _POST, _COOKIE and _SESSION.
+     * array with the keys _SERVER, _REQUEST, _GET, _POST, _COOKIE and _SESSION. The request
+     * method defaults to GET when REQUEST_METHOD is absent.
      *
      * @return RouteRequest
+     *
+     * @throws \InvalidArgumentException when neither PATH_INFO nor REQUEST_URI is present
      */
     public static function createFromEnv(array $env)
     {
@@ -255,8 +258,7 @@ class RouteRequest implements RouteRequestMatcher
         } elseif (isset($env['_SERVER']['REQUEST_URI'])) {
             $path = $env['_SERVER']['REQUEST_URI'];
         } else {
-            // XXX: check path or throw exception
-            $path = '/';
+            throw new \InvalidArgumentException('The environment has no PATH_INFO or REQUEST_URI, neither at the top level nor in _SERVER.');
         }
 
         $requestMethod = 'GET';
