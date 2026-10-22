@@ -175,9 +175,7 @@ class RouteRequest implements RouteRequestMatcher
 
     public function pathEndWith($suffix)
     {
-        $p = strrpos($this->path, (string) $suffix);
-
-        return ($p == strlen($this->path) - strlen((string) $suffix));
+        return str_ends_with($this->path, (string) $suffix);
     }
 
     public function hostMatch($host, array &$matches = [])

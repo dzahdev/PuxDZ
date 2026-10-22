@@ -95,4 +95,15 @@ final class MatcherTest extends TestCase
             ['path' => '/foo', 'request_method' => 'POST', 'host' => 'example.com'],
         ]));
     }
+
+    /**
+     * strrpos returned false for the absent suffix, and false == 0 held when the suffix was as
+     * long as the path.
+     *
+     * @see PLAN-port-php82.md L15
+     */
+    public function test_path_end_with_absent_suffix_as_long_as_path_returns_false(): void
+    {
+        self::assertFalse(RouteRequest::create('GET', '/ab')->pathEndWith('xyz'));
+    }
 }
