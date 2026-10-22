@@ -10,8 +10,8 @@ namespace Pux;
  * You can use RouteRequest's constraint methods to check if a request matches
  * your logics.
  *
- * The class has no parent: it replaces the former base class Universal\Http\HttpRequest and keeps
- * the public property names that class provided.
+ * The class has no parent: it replaces the former base class HttpRequest of the third-party
+ * package universal/universal and keeps the public property names that class provided.
  */
 class RouteRequest implements RouteRequestMatcher
 {

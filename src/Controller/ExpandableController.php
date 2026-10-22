@@ -3,7 +3,6 @@ namespace Pux\Controller;
 
 use ReflectionClass;
 use ReflectionMethod;
-use Universal\Http\HttpRequest;
 use Pux\Mux;
 use Pux\Expandable;
 use Pux\Builder\ControllerRouteBuilder;

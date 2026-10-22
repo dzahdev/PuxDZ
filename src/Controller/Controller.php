@@ -2,14 +2,14 @@
 namespace Pux\Controller;
 use ReflectionClass;
 use ReflectionObject;
-use Universal\Http\HttpRequest;
 use Pux\Mux;
 use Pux\Handler;
+use Pux\RouteRequest;
 
 class Controller implements Handler
 {
     /**
-     * @var array PHPSGI-shaped environment array (derived from the server array)
+     * @var array environment array: server parameters plus the keys pux.controller_action and pux.route
      */
     protected $environment = [];
 
@@ -20,7 +20,7 @@ class Controller implements Handler
     protected $response = [];
 
     /**
-     * @var Universal\Http\HttpRequest object
+     * @var RouteRequest|null request built from $environment by getRequest()
      */
     protected $_request;
 
@@ -81,10 +81,12 @@ class Controller implements Handler
     }
 
     /**
-     * Create and Return HttpRequest object from the environment
+     * Create and return the RouteRequest of the environment given to call(): a flat
+     * environment of the shape of $_SERVER or one with the server array under _SERVER
+     * (see RouteRequest::createFromEnv).
      *
      * @param boolean $recreate
-     * @return Universal\Http\HttpRequest
+     * @return RouteRequest
      */
     protected function getRequest($recreate = false)
     {
@@ -92,7 +94,7 @@ class Controller implements Handler
             return $this->_request;
         }
 
-        return $this->_request = HttpRequest::createFromGlobals($this->environment);
+        return $this->_request = RouteRequest::createFromEnv($this->environment);
     }
 
     protected function toJson($data, $encodeFlags = null)
