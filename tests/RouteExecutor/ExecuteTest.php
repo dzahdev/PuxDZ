@@ -127,10 +127,6 @@ final class ExecuteTest extends TestCase
         self::assertSame('closure 5', self::executeDispatched($mux, '/c/5'));
     }
 
-    /**
-     * @see Stage 1
-     */
-    #[Group('pending-stage-1')]
     public function test_execute_controller_json_action_returns_json_response_triple(): void
     {
         $mux = new Mux();

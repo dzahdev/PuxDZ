@@ -87,10 +87,6 @@ final class BuildTest extends TestCase
         );
     }
 
-    /**
-     * @see Stage 1
-     */
-    #[Group('pending-stage-1')]
     public function test_build_of_controller_skips_run_action_and_has_action(): void
     {
         self::assertSame(
@@ -104,10 +100,6 @@ final class BuildTest extends TestCase
         );
     }
 
-    /**
-     * @see Stage 1
-     */
-    #[Group('pending-stage-1')]
     public function test_build_of_restful_controller_returns_annotated_resource_routes(): void
     {
         self::assertSame(

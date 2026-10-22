@@ -14,15 +14,9 @@ use Pux\RouteRequest;
 /**
  * Mounting controllers: an ExpandableController (or its expansion) mounted on a path
  * dispatches to its action routes.
- *
- * Every test here is in group pending-stage-1: the fixtures extend Pux\Controller\Controller,
- * which implements the removed PHPSGI\App interface and cannot be loaded until Stage 1.
- *
- * @see Stage 1
  */
 final class ControllerMountTest extends TestCase
 {
-    #[Group('pending-stage-1')]
     public function test_dispatch_after_mount_of_controller_expansion_returns_static_action_routes(): void
     {
         $mux = new Mux();
@@ -34,7 +28,6 @@ final class ControllerMountTest extends TestCase
         self::assertSame([false, '/product/del'], array_slice($mux->dispatch('/product/del'), 0, 2));
     }
 
-    #[Group('pending-stage-1')]
     public function test_dispatch_after_mount_of_controller_object_returns_class_name_action_callbacks(): void
     {
         $mux = new Mux();
@@ -49,7 +42,6 @@ final class ControllerMountTest extends TestCase
         self::assertNull($mux->dispatch('/bar'));
     }
 
-    #[Group('pending-stage-1')]
     public function test_dispatch_after_mount_of_annotated_controller_returns_routes_without_method_annotation(): void
     {
         $mux = new Mux();
@@ -77,7 +69,6 @@ final class ControllerMountTest extends TestCase
      * @see PLAN-port-php82.md L4
      */
     #[Group('known-defect')]
-    #[Group('pending-stage-1')]
     #[DataProvider('annotatedActionRequests')]
     public function test_dispatch_after_mount_of_annotated_controller_honours_method_annotation(
         string $method,
@@ -109,7 +100,6 @@ final class ControllerMountTest extends TestCase
      * @see PLAN-port-php82.md L4
      */
     #[Group('known-defect')]
-    #[Group('pending-stage-1')]
     #[DataProvider('resourceRequests')]
     public function test_dispatch_after_mount_of_restful_controller_selects_action_by_method(
         string $method,

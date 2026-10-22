@@ -382,7 +382,7 @@ class Mux implements IteratorAggregate
             } else {
                 // prefix match is used when expanding is not enabled.
                 if ((
-                        (is_int($route[2]) || $route[2] instanceof self || $route[2] instanceof \PHPSGI\App)
+                        (is_int($route[2]) || $route[2] instanceof self || $route[2] instanceof Handler)
                         && strncmp((string) $route[1], $path, strlen((string) $route[1])) === 0
                     ) || $route[1] == $path) {
                     // validate request method

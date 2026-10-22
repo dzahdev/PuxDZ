@@ -66,10 +66,8 @@ final class BuildTest extends TestCase
 
     /**
      * @see PLAN-port-php82.md L4
-     * @see Stage 1
      */
     #[Group('known-defect')]
-    #[Group('pending-stage-1')]
     #[DataProvider('resourceRequests')]
     public function test_build_with_restful_controller_selects_action_by_request_method(string $method, string $action): void
     {

@@ -4,13 +4,12 @@ use ReflectionClass;
 use ReflectionObject;
 use Universal\Http\HttpRequest;
 use Pux\Mux;
+use Pux\Handler;
 
-use PHPSGI\App;
-
-class Controller implements App
+class Controller implements Handler
 {
     /**
-     * @var array PHPSGI compatible environment array (derived from $_SERVER)
+     * @var array PHPSGI-shaped environment array (derived from the server array)
      */
     protected $environment = [];
 
