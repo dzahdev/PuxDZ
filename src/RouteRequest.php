@@ -282,6 +282,42 @@ class RouteRequest implements RouteRequestMatcher
     }
 
     /**
+     * Create a request from a server array of the shape of $_SERVER.
+     *
+     * The method is REQUEST_METHOD; the path is PATH_INFO, or REQUEST_URI without its query
+     * string. Headers are derived from the HTTP_* keys, CONTENT_TYPE and CONTENT_LENGTH. The
+     * parameter arrays (query, body, cookies, session) stay empty: this factory reads only the
+     * server array. This is the only place in the library that reads $_SERVER, and only when
+     * $server is null.
+     *
+     * @param array<string, mixed>|null $server
+     *
+     * @throws \InvalidArgumentException when REQUEST_METHOD or both PATH_INFO and REQUEST_URI are missing
+     */
+    public static function fromServer(?array $server = null): self
+    {
+        $server ??= $_SERVER;
+
+        if (!isset($server['REQUEST_METHOD'])) {
+            throw new \InvalidArgumentException('The server array has no REQUEST_METHOD.');
+        }
+
+        if (isset($server['PATH_INFO'])) {
+            $path = $server['PATH_INFO'];
+        } elseif (isset($server['REQUEST_URI'])) {
+            $path = explode('?', (string) $server['REQUEST_URI'], 2)[0];
+        } else {
+            throw new \InvalidArgumentException('The server array has no PATH_INFO or REQUEST_URI.');
+        }
+
+        $self = new self($server['REQUEST_METHOD'], $path);
+        $self->serverParameters = $server;
+        $self->headers = self::headersFromServer($server);
+
+        return $self;
+    }
+
+    /**
      * Header name to value from the HTTP_* keys, CONTENT_TYPE and CONTENT_LENGTH of a server
      * array: HTTP_USER_AGENT becomes "User-Agent", CONTENT_TYPE becomes "Content-Type".
      *
