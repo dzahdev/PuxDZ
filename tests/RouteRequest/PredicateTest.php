@@ -83,7 +83,6 @@ final class PredicateTest extends TestCase
     /**
      * @see PLAN-port-php82.md L2
      */
-    #[Group('known-defect')]
     public function test_match_constraints_with_only_non_matching_alternative_returns_false(): void
     {
         $request = RouteRequest::create('GET', '/foo', ['HTTP_HOST' => 'example.com']);

@@ -86,24 +86,24 @@ class RouteRequest implements RouteRequestMatcher
     {
         foreach ($constraints as $constraint) {
             $result = true;
-            if (isset($constraints['host_match'])) {
-                $result = $result && $this->hostMatch($constraints['host_match']);
+            if (isset($constraint['host_match'])) {
+                $result = $result && $this->hostMatch($constraint['host_match']);
             }
 
-            if (isset($constraints['host'])) {
-                $result = $result && $this->hostEqual($constraints['host']);
+            if (isset($constraint['host'])) {
+                $result = $result && $this->hostEqual($constraint['host']);
             }
 
-            if (isset($constraints['request_method'])) {
-                $result = $result && $this->requestMethodEqual($constraints['request_method']);
+            if (isset($constraint['request_method'])) {
+                $result = $result && $this->requestMethodEqual($constraint['request_method']);
             }
 
-            if (isset($constraints['path_match'])) {
-                $result = $result && $this->pathMatch($constraints['path_match']);
+            if (isset($constraint['path_match'])) {
+                $result = $result && $this->pathMatch($constraint['path_match']);
             }
 
-            if (isset($constraints['path'])) {
-                $result = $result && $this->pathEqual($constraints['path']);
+            if (isset($constraint['path'])) {
+                $result = $result && $this->pathEqual($constraint['path']);
             }
 
             // If it matches all constraints, we simply return true and skip other constraints

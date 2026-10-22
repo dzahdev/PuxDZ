@@ -81,4 +81,18 @@ final class MatcherTest extends TestCase
     {
         self::assertFalse(RouteRequest::create('GET', '/', ['QUERY_STRING' => 'page=2'])->queryStringMatch('#^sort=#'));
     }
+
+    /**
+     * @see PLAN-port-php82.md L2
+     */
+    public function test_match_constraints_rejects_alternative_with_one_failing_key(): void
+    {
+        $request = RouteRequest::create('POST', '/foo', ['HTTP_HOST' => 'example.com']);
+
+        self::assertFalse($request->matchConstraints([['path' => '/foo', 'request_method' => 'GET']]));
+        self::assertTrue($request->matchConstraints([
+            ['path' => '/foo', 'request_method' => 'GET'],
+            ['path' => '/foo', 'request_method' => 'POST', 'host' => 'example.com'],
+        ]));
+    }
 }
