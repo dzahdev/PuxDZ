@@ -9,7 +9,7 @@ use Pux\RouteRequest;
 
 /**
  * Route constraints on the request: method, domain (host) and secure (HTTPS). The request is
- * always passed as a RouteRequest; tests never write $_SERVER.
+ * always passed as a RouteRequest; tests never write the server superglobal.
  *
  * Tests in group pending-stage-1 cannot run before Stage 1: RouteRequest extends the removed
  * Universal\Http\HttpRequest and cannot be loaded.
@@ -110,7 +110,7 @@ final class RequestConstraintTest extends TestCase
     }
 
     /**
-     * Fails today with the warning "Undefined array key HTTP_HOST" (Mux::match reads $_SERVER).
+     * Fails today with the warning "Undefined array key HTTP_HOST" (Mux::match reads the server superglobal).
      *
      * @see PLAN-port-php82.md L11
      */

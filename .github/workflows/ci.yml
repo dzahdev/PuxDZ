@@ -33,16 +33,15 @@ jobs:
         run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: Coding style
-        # Stage 0: suite is red until Stage 2; remove in Stage 2
+        # removed in Stage 5: src/ is reformatted only in the module review stage
         continue-on-error: true
         run: composer cs
 
       - name: Static analysis
-        # Stage 0: suite is red until Stage 2; remove in Stage 2
+        # removed in Stage 5: PHPStan reports defects that Stages 1-4 fix test-first
         continue-on-error: true
         run: composer stan
 
       - name: Tests
-        # Stage 0: suite is red until Stage 2; remove in Stage 2
-        continue-on-error: true
+        # Excludes the groups known-defect and pending-stage-1 (phpunit.xml.dist); must be green.
         run: composer test

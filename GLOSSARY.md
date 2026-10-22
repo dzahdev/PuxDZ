@@ -101,9 +101,10 @@ action to a route `[path, actionName, options]`:
 - the `@Method("GET")` annotation sets `options['method']` through
   `Mux::convertRequestMethodConstant()`.
 
-The inherited test `ControllerRouteBuilderTest::testAnnotationForGetActionMethods` expects
-annotations declared on a parent class method to apply to an overriding child method that has
-none (fixture `ChildController`); the test does not run until Stage 1 removes `PHPSGI\App`.
+Annotations declared on a parent class method apply to an overriding child method that has
+none (`tests/ControllerRouteBuilder/BuildTest.php`,
+`test_build_child_override_without_annotations_keeps_parent_annotations`, fixture
+`ChildController`).
 
 `RouteExecutor::execute($route)` runs an action: it instantiates the class named in
 `$callback[0]` (with `options['constructor_args']` if present) and passes arguments matched by
@@ -143,6 +144,40 @@ Keys of element `3` of a route that the code reads. The `Mux::$routes` docblock 
 Keys written during processing: `vars` (regex matches, set by `Mux::match()`), `mux` (submux
 object, set by `Mux::mount()`, breaks `export()`, defect L10), `constructor_args` (read by
 `RouteExecutor::execute()`), and the `PatternCompiler` output keys listed under PCRE route.
+
+## Mount point
+
+The route that `mount()` adds to the parent when `Mux::$expand === false`: its pattern is the
+mount pattern, its callback the integer submux id. A static mount point matches by prefix; a
+PCRE mount point is compiled with `PatternCompiler::compilePrefix()` (no end anchor). In test
+names: "mount point".
+
+## Named route
+
+A route registered with the `id` option. `Mux::getRoute($id)` returns it and `Mux::url($id,
+$params)` builds a path from its source pattern: each `:name` is replaced by `$params['name']`,
+an optional group whose variables are not given is removed.
+
+## Route cache
+
+PHP code that rebuilds a `Mux`: `Mux::export()` returns `var_export($mux)`, evaluated through
+`Mux::__set_state()`; `Mux::compile($file)` and `MuxCompiler::compile($file)` write
+`<?php return <export>;` to a file. `MuxCompiler::load($file)` requires such a file and merges
+its routes. In test names: "round trip" is export followed by `eval`.
+
+## Test groups
+
+Red tests are kept in two PHPUnit groups that `phpunit.xml.dist` excludes, so that
+`composer test` stays green:
+
+- `known-defect`: the test specifies behavior that fails today because of a defect in the
+  registry; the docblock names the ID (`@see PLAN-port-php82.md L4`). The cycle that fixes the
+  defect removes the group.
+- `pending-stage-1`: the test cannot run before Stage 1 because it loads `Pux\RouteRequest` or
+  `Pux\Controller\Controller`, which depend on the removed `Universal\Http\HttpRequest` and
+  `PHPSGI\App`. A test can be in both groups.
+
+`composer test:red` runs only these groups, `composer test:all` runs every test.
 
 ## Seam
 

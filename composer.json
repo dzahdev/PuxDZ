@@ -42,9 +42,6 @@
         },
         "classmap": [
             "tests/Fixtures/"
-        ],
-        "files": [
-            "tests/Support/testmore.php"
         ]
     },
     "config": {
@@ -57,6 +54,8 @@
     },
     "scripts": {
         "test": "phpunit",
+        "test:red": "phpunit --group known-defect --group pending-stage-1",
+        "test:all": "phpunit --exclude-group __none__",
         "test:unit": "phpunit --testsuite unit",
         "test:watch": [
             "Composer\\Config::disableProcessTimeout",
@@ -72,7 +71,9 @@
         ]
     },
     "scripts-descriptions": {
-        "test": "Run the full PHPUnit suite",
+        "test": "Run the PHPUnit suite without the known-defect and pending-stage-1 groups (must be green)",
+        "test:red": "Run only the red tests: groups known-defect (registry IDs) and pending-stage-1",
+        "test:all": "Run every test, red ones included: --exclude-group replaces the exclusion list of phpunit.xml.dist with a group no test has",
         "test:unit": "Run the unit test suite; pass a filter after --, e.g. composer test:unit -- --filter MuxTest",
         "test:watch": "Re-run PHPUnit when the content of a .php file in src/ or tests/ changes (CRC32 of the content, not mtime)",
         "stan": "Run PHPStan with phpstan.neon.dist",
