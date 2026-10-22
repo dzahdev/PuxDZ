@@ -8,7 +8,7 @@ use Pux\Tests\Fixtures\RequestEchoController;
 /**
  * Inside an action called through Controller::call, Controller::getRequest returns a
  * Pux\RouteRequest built from the environment by RouteRequest::createFromEnv: a flat
- * PHPSGI-shaped environment and one with the server array under _SERVER both work.
+ * environment of the shape of $_SERVER and one with the server array under _SERVER both work.
  */
 final class ControllerRequestTest extends TestCase
 {
