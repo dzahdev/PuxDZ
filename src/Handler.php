@@ -15,9 +15,9 @@ namespace Pux;
 interface Handler
 {
     /**
-     * @param array<string, mixed> $environment server parameters plus the keys
-     *                                          pux.controller_action and pux.route
-     * @param array<int, mixed>    $response    response in the form [code, headers, body]
+     * @param array $environment server parameters plus the keys pux.controller_action and
+     *                           pux.route
+     * @param array $response    response in the form [code, headers, body]
      *
      * @return mixed the result of the action, usually a response triple or a string
      */

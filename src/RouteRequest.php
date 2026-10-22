@@ -219,7 +219,7 @@ class RouteRequest implements RouteRequestMatcher
     public static function create($method, $path, array $env = [])
     {
         $self = new self($method, $path);
-        $self->serverParameters = isset($env['_SERVER']) ? $env['_SERVER'] : $env;
+        $self->serverParameters = $env['_SERVER'] ?? $env;
         $self->headers = self::headersFromServer($self->serverParameters);
 
         $self->parameters = $env['_REQUEST'] ?? [];
@@ -262,14 +262,14 @@ class RouteRequest implements RouteRequestMatcher
         $requestMethod = 'GET';
         if (isset($env['REQUEST_METHOD'])) {
             $requestMethod = $env['REQUEST_METHOD'];
-        } else if (isset($env['_SERVER']['REQUEST_METHOD'])) { // compatibility for superglobal
+        } elseif (isset($env['_SERVER']['REQUEST_METHOD'])) { // compatibility for superglobal
             $requestMethod = $env['_SERVER']['REQUEST_METHOD'];
         }
 
         // create request object with request method and path,
         // we can assign other parameters later.
         $self = new self($requestMethod, $path);
-        $self->serverParameters = isset($env['_SERVER']) ? $env['_SERVER'] : $env;
+        $self->serverParameters = $env['_SERVER'] ?? $env;
         $self->headers = self::headersFromServer($self->serverParameters);
 
         // A flat server array has none of these keys: each one is optional.
