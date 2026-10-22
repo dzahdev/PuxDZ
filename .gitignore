@@ -1,2 +1,8 @@
-vendor/
-.vscode/launch.json
+/vendor/
+/composer.lock
+/.phpunit.cache/
+/.php-cs-fixer.cache
+/.task/
+/PLAN-port-php82.md
+/build/
+/.vscode/launch.json

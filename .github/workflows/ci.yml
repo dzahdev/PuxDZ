@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4', '8.5']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Coding style
+        # Stage 0: suite is red until Stage 2; remove in Stage 2
+        continue-on-error: true
+        run: composer cs
+
+      - name: Static analysis
+        # Stage 0: suite is red until Stage 2; remove in Stage 2
+        continue-on-error: true
+        run: composer stan
+
+      - name: Tests
+        # Stage 0: suite is red until Stage 2; remove in Stage 2
+        continue-on-error: true
+        run: composer test

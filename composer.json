@@ -1,30 +1,89 @@
 {
-    "name": "corneltek/pux",
-    "description": "The fast PHP router",
-    "homepage": "https://github.com/c9s/Pux",
+    "name": "dzahdev/puxdz",
+    "description": "Fast, dependency-free PHP router",
+    "type": "library",
+    "license": "MIT",
     "keywords": [
-        "router", "http", "middleware", "server", "fast", "phpsgi"
+        "router",
+        "routing",
+        "http",
+        "dispatcher",
+        "url"
     ],
+    "homepage": "https://github.com/dzahdev/PuxDZ",
     "authors": [
         {
             "name": "Yo-An Lin",
             "email": "yoanlin93@gmail.com"
+        },
+        {
+            "name": "Denis Zakharov",
+            "email": "dezahdev@gmail.com"
         }
     ],
     "require": {
-        "phpsgi/phpsgi": "1.0.x-dev",
-        "universal/universal": "2.0.x-dev"
+        "php": "^8.2",
+        "ext-pcre": "*"
     },
-    "license": "MIT",
     "require-dev": {
-        "corneltek/phpunit-testmore": "dev-master"
+        "friendsofphp/php-cs-fixer": "^3.75",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^11.5",
+        "spatie/phpunit-watcher": "^1.24"
     },
     "autoload": {
         "psr-4": {
             "Pux\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Pux\\Tests\\": "tests/"
+        },
+        "classmap": [
+            "tests/Fixtures/"
+        ],
+        "files": [
+            "tests/Support/testmore.php"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "platform": {
+            "php": "8.2.0"
+        },
+        "platform-check": true,
+        "allow-plugins": {}
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test:unit": "phpunit --testsuite unit",
+        "test:watch": [
+            "Composer\\Config::disableProcessTimeout",
+            "phpunit-watcher watch"
+        ],
+        "stan": "phpstan analyse",
+        "cs": "php-cs-fixer check --diff",
+        "cs:fix": "php-cs-fixer fix",
+        "check": [
+            "@cs",
+            "@stan",
+            "@test"
+        ]
+    },
+    "scripts-descriptions": {
+        "test": "Run the full PHPUnit suite",
+        "test:unit": "Run the unit test suite; pass a filter after --, e.g. composer test:unit -- --filter MuxTest",
+        "test:watch": "Re-run PHPUnit when the content of a .php file in src/ or tests/ changes (CRC32 of the content, not mtime)",
+        "stan": "Run PHPStan with phpstan.neon.dist",
+        "cs": "Check coding style with PHP-CS-Fixer, print the diff, change nothing",
+        "cs:fix": "Apply PHP-CS-Fixer to the files in .php-cs-fixer.dist.php",
+        "check": "Run cs, stan and test in sequence; stops at the first failure"
+    },
     "extra": {
-        "branch-alias": { "dev-master": "2.0.x-dev" }
-    }
+        "branch-alias": {
+            "dev-master": "3.0.x-dev"
+        }
+    },
+    "minimum-stability": "stable"
 }

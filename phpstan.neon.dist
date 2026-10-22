@@ -1,0 +1,7 @@
+# Stage 0 starts at level 5; Stage 5 raises it to 9 and removes any baseline.
+parameters:
+    level: 5
+    paths:
+        - src
+        - tests
+    tmpDir: build/phpstan

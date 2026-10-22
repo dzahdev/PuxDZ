@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Runs PHPUnit inside a PHP container, for machines whose local PHP lacks ext-dom or
+# ext-xmlwriter. All arguments are passed to vendor/bin/phpunit unchanged.
+#
+#   bin/test-in-docker                       full suite
+#   bin/test-in-docker --filter MuxTest      one test class
+#   PHP_IMAGE=php:8.2-cli bin/test-in-docker run on another PHP version
+#
+# vendor/ must exist (composer install). The script never falls back to the local PHP.
+set -euo pipefail
+
+if ! command -v docker >/dev/null 2>&1; then
+    echo "bin/test-in-docker: docker is not installed or not in PATH" >&2
+    exit 127
+fi
+
+image="${PHP_IMAGE:-php:8.3-cli}"
+script_dir="$(dirname -- "${BASH_SOURCE[0]}")"
+project_root="$(cd -- "$script_dir/.." && pwd)"
+
+if [ ! -x "$project_root/vendor/bin/phpunit" ]; then
+    echo "bin/test-in-docker: $project_root/vendor/bin/phpunit not found; run composer install first" >&2
+    exit 1
+fi
+
+tty_flag=()
+if [ -t 1 ]; then
+    tty_flag=(-t)
+fi
+
+exec docker run --rm "${tty_flag[@]}" \
+    -u "$(id -u):$(id -g)" \
+    -v "$project_root":/app \
+    -w /app \
+    "$image" \
+    vendor/bin/phpunit "$@"
