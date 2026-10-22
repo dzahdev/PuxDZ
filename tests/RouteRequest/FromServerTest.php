@@ -6,9 +6,9 @@ use PHPUnit\Framework\TestCase;
 use Pux\RouteRequest;
 
 /**
- * RouteRequest::fromServer builds a request from an array of the shape of $_SERVER. It is the
- * only place in the library that reads the server superglobal, and only when no array is given
- * (architectural invariant 7 of the port plan).
+ * RouteRequest::fromServer builds a request from an array of the shape of the server
+ * superglobal. It is the only place in the library that reads the superglobal, and only when no
+ * array is given (architectural invariant 7 of the port plan).
  */
 final class FromServerTest extends TestCase
 {
