@@ -1,8 +1,8 @@
 <?php
 
-namespace Pux;
+declare(strict_types=1);
 
-use Universal\Http\HttpRequest;
+namespace Pux;
 
 /**
  * RouteRequest defines request information for routing.
@@ -10,22 +10,49 @@ use Universal\Http\HttpRequest;
  * You can use RouteRequest's constraint methods to check if a request matches
  * your logics.
  *
+ * The class has no parent: it replaces the former base class Universal\Http\HttpRequest and keeps
+ * the public property names that class provided.
  */
-class RouteRequest extends HttpRequest implements RouteRequestMatcher
+class RouteRequest implements RouteRequestMatcher
 {
     /**
-     * @var array
+     * @var array<string, mixed> server parameters, the shape of $_SERVER
      */
-    protected $headers = [];
+    public array $serverParameters = [];
 
     /**
-     * @param string $requestMethod
-     * @param string $path
+     * @var array<string, mixed> request parameters, the shape of $_REQUEST
      */
-    public function __construct(public $requestMethod, public $path)
+    public array $parameters = [];
+
+    /**
+     * @var array<string, mixed> query string parameters, the shape of $_GET
+     */
+    public array $queryParameters = [];
+
+    /**
+     * @var array<string, mixed> body parameters, the shape of $_POST
+     */
+    public array $bodyParameters = [];
+
+    /**
+     * @var array<string, mixed> the shape of $_COOKIE
+     */
+    public array $cookieParameters = [];
+
+    /**
+     * @var array<string, mixed> the shape of $_SESSION
+     */
+    public array $sessionParameters = [];
+
+    /**
+     * @var array<string, mixed> header name (for example "User-Agent") to value, derived from the
+     *                           HTTP_* keys, CONTENT_TYPE and CONTENT_LENGTH of the server parameters
+     */
+    public array $headers = [];
+
+    public function __construct(public string $requestMethod, public string $path)
     {
-        // Note: It's not neccessary to call parent::__construct because we
-        // don't depend on superglobal variables.
     }
 
     /**
@@ -50,7 +77,8 @@ class RouteRequest extends HttpRequest implements RouteRequestMatcher
     }
 
     /**
-     * @param contraints[]
+     * @param array $constraints list of alternatives; each alternative is an array with the
+     *                           optional keys host_match, host, request_method, path_match, path
      *
      * @return boolean true on match
      */
@@ -178,7 +206,7 @@ class RouteRequest extends HttpRequest implements RouteRequestMatcher
      */
     public function requestMethodEqual($requestMethod)
     {
-        return strcasecmp($this->requestMethod, $requestMethod) === 0;
+        return strcasecmp($this->requestMethod, (string) $requestMethod) === 0;
     }
 
     /**
@@ -186,26 +214,15 @@ class RouteRequest extends HttpRequest implements RouteRequestMatcher
      *
      * @param string $method
      * @param string $path
-     * @param array  $headers The headers will be built on $_SERVER if the argument is null.
+     * @param array  $env    a flat server array, or a globals-shaped array with the key _SERVER
      *
      * @return RouteRequest
      */
     public static function create($method, $path, array $env = [])
     {
         $self = new self($method, $path);
-
-        if (function_exists('getallheaders')) {
-            $self->headers = getallheaders();
-        } else {
-            // TODO: filter array keys by their prefix, consider adding an extension function for this.
-            $self->headers = self::createHeadersFromServerGlobal($env);
-        }
-
-        if (isset($env['_SERVER'])) {
-            $self->serverParameters = $env['_SERVER'];
-        } else {
-            $self->serverParameters = $env;
-        }
+        $self->serverParameters = isset($env['_SERVER']) ? $env['_SERVER'] : $env;
+        $self->headers = self::headersFromServer($self->serverParameters);
 
         $self->parameters = $env['_REQUEST'] ?? [];
         $self->queryParameters = $env['_GET'] ?? [];
@@ -217,7 +234,8 @@ class RouteRequest extends HttpRequest implements RouteRequestMatcher
     }
 
     /**
-     * Create request object from global variables.
+     * Create request object from an environment array: a flat server array, or a globals-shaped
+     * array with the keys _SERVER, _REQUEST, _GET, _POST, _COOKIE and _SESSION.
      *
      * @return RouteRequest
      */
@@ -251,18 +269,8 @@ class RouteRequest extends HttpRequest implements RouteRequestMatcher
         // create request object with request method and path,
         // we can assign other parameters later.
         $self = new self($requestMethod, $path);
-        if (function_exists('getallheaders')) {
-            $self->headers = getallheaders();
-        } else {
-            // TODO: filter array keys by their prefix, consider adding an extension function for this.
-            $self->headers = self::createHeadersFromServerGlobal($env);
-        }
-
-        if (isset($env['_SERVER'])) {
-            $self->serverParameters = $env['_SERVER'];
-        } else {
-            $self->serverParameters = $env;
-        }
+        $self->serverParameters = isset($env['_SERVER']) ? $env['_SERVER'] : $env;
+        $self->headers = self::headersFromServer($self->serverParameters);
 
         $self->parameters = $env['_REQUEST'];
         $self->queryParameters = $env['_GET'];
@@ -271,5 +279,31 @@ class RouteRequest extends HttpRequest implements RouteRequestMatcher
         $self->sessionParameters = $env['_SESSION'];
 
         return $env['__request_object'] = $self;
+    }
+
+    /**
+     * Header name to value from the HTTP_* keys, CONTENT_TYPE and CONTENT_LENGTH of a server
+     * array: HTTP_USER_AGENT becomes "User-Agent", CONTENT_TYPE becomes "Content-Type".
+     *
+     * @param array<string, mixed> $server
+     *
+     * @return array<string, mixed>
+     */
+    private static function headersFromServer(array $server): array
+    {
+        $headers = [];
+        foreach ($server as $key => $value) {
+            $key = (string) $key;
+            if (str_starts_with($key, 'HTTP_')) {
+                $name = substr($key, 5);
+            } elseif ($key === 'CONTENT_TYPE' || $key === 'CONTENT_LENGTH') {
+                $name = $key;
+            } else {
+                continue;
+            }
+            $headers[implode('-', array_map('ucfirst', explode('_', strtolower($name))))] = $value;
+        }
+
+        return $headers;
     }
 }

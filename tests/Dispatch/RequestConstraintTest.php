@@ -10,18 +10,13 @@ use Pux\RouteRequest;
 /**
  * Route constraints on the request: method, domain (host) and secure (HTTPS). The request is
  * always passed as a RouteRequest; tests never write the server superglobal.
- *
- * Tests in group pending-stage-1 cannot run before Stage 1: RouteRequest extends the removed
- * Universal\Http\HttpRequest and cannot be loaded.
  */
 final class RequestConstraintTest extends TestCase
 {
     /**
      * @see PLAN-port-php82.md L4
-     * @see Stage 1
      */
     #[Group('known-defect')]
-    #[Group('pending-stage-1')]
     public function test_dispatch_request_with_post_method_returns_post_route(): void
     {
         $mux = new Mux();
@@ -34,10 +29,8 @@ final class RequestConstraintTest extends TestCase
 
     /**
      * @see PLAN-port-php82.md L4
-     * @see Stage 1
      */
     #[Group('known-defect')]
-    #[Group('pending-stage-1')]
     public function test_dispatch_with_get_request_returns_get_routes(): void
     {
         $mux = new Mux();
@@ -51,10 +44,8 @@ final class RequestConstraintTest extends TestCase
 
     /**
      * @see PLAN-port-php82.md L3
-     * @see Stage 1
      */
     #[Group('known-defect')]
-    #[Group('pending-stage-1')]
     public function test_dispatch_with_secure_route_rejects_plain_http(): void
     {
         $mux = new Mux();
@@ -65,10 +56,8 @@ final class RequestConstraintTest extends TestCase
 
     /**
      * @see PLAN-port-php82.md L3
-     * @see Stage 1
      */
     #[Group('known-defect')]
-    #[Group('pending-stage-1')]
     public function test_dispatch_with_secure_route_accepts_https(): void
     {
         $mux = new Mux();
@@ -81,10 +70,8 @@ final class RequestConstraintTest extends TestCase
 
     /**
      * @see PLAN-port-php82.md L11
-     * @see Stage 1
      */
     #[Group('known-defect')]
-    #[Group('pending-stage-1')]
     public function test_dispatch_with_domain_route_accepts_request_for_that_host(): void
     {
         $mux = new Mux();
@@ -97,10 +84,8 @@ final class RequestConstraintTest extends TestCase
 
     /**
      * @see PLAN-port-php82.md L11
-     * @see Stage 1
      */
     #[Group('known-defect')]
-    #[Group('pending-stage-1')]
     public function test_dispatch_with_domain_route_rejects_request_for_other_host(): void
     {
         $mux = new Mux();

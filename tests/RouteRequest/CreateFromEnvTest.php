@@ -11,12 +11,11 @@ use Pux\RouteRequest;
  * server array or a globals-shaped array with the keys _SERVER, _GET, _POST, _REQUEST, _COOKIE
  * and _SESSION.
  *
- * Expected values were checked against RouteRequest on top of the removed
- * Universal\Http\HttpRequest before Stage 1 rewrote the class.
+ * Expected values were checked against RouteRequest on top of its former third-party parent
+ * class before Stage 1 rewrote RouteRequest without a parent.
  */
 final class CreateFromEnvTest extends TestCase
 {
-    #[Group('pending-stage-1')]
     public function test_create_from_env_reads_nested_server_array_and_superglobals(): void
     {
         $request = RouteRequest::createFromEnv([
@@ -38,7 +37,6 @@ final class CreateFromEnvTest extends TestCase
         self::assertSame(['user' => 'u'], $request->sessionParameters);
     }
 
-    #[Group('pending-stage-1')]
     public function test_create_from_env_prefers_path_info_to_request_uri(): void
     {
         $request = RouteRequest::createFromEnv([
@@ -51,12 +49,29 @@ final class CreateFromEnvTest extends TestCase
         self::assertSame('/info', $request->getPath());
     }
 
-    #[Group('pending-stage-1')]
     public function test_create_keeps_flat_environment_as_server_parameters(): void
     {
         $request = RouteRequest::create('GET', '/', ['HTTP_HOST' => 'example.com', 'SERVER_PORT' => '443']);
 
         self::assertSame(['HTTP_HOST' => 'example.com', 'SERVER_PORT' => '443'], $request->serverParameters);
         self::assertSame([], $request->queryParameters);
+    }
+
+    public function test_create_derives_headers_from_http_and_content_keys(): void
+    {
+        $request = RouteRequest::create('POST', '/', [
+            'HTTP_HOST' => 'example.com',
+            'HTTP_X_REQUEST_ID' => '7',
+            'CONTENT_TYPE' => 'application/json',
+            'CONTENT_LENGTH' => '2',
+            'SERVER_PORT' => '80',
+        ]);
+
+        self::assertSame([
+            'Host' => 'example.com',
+            'X-Request-Id' => '7',
+            'Content-Type' => 'application/json',
+            'Content-Length' => '2',
+        ], $request->headers);
     }
 }
