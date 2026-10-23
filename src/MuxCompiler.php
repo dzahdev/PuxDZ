@@ -84,22 +84,24 @@ class MuxCompiler
     /**
      * Validate controller classes and controller methods before compiling to route cache.
      * The check reads the class only: no controller is instantiated, so constructors do not run.
+     * A [class, method] callback needs an existing class and method, an [object, method]
+     * callback an existing method of the object; other callbacks (closures, function names,
+     * invokable objects, submux ids) are not checked.
      *
-     * @throws InvalidCallback when a [class, method] callback names a missing class or method
+     * @throws InvalidCallback when an array callback names a missing class or method
      */
     public function validateRouteCallback(array $routes)
     {
         foreach ($routes as $route) {
             $callback = $route[2];
             if (is_array($callback)) {
-                $class = $callback[0];
-                $method = $callback[1];
-                if (!class_exists($class, true)) {
-                    throw InvalidCallback::classNotFound($class);
+                [$target, $method] = $callback;
+                if (is_string($target) && !class_exists($target, true)) {
+                    throw InvalidCallback::classNotFound($target);
                 }
 
-                if (!method_exists($class, $method)) {
-                    throw InvalidCallback::methodNotFound($class, $method);
+                if (!method_exists($target, $method)) {
+                    throw InvalidCallback::methodNotFound(is_object($target) ? $target::class : $target, $method);
                 }
             }
         }

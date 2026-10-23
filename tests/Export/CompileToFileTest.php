@@ -7,6 +7,8 @@ use Pux\Exception\InvalidCallback;
 use Pux\Mux;
 use Pux\MuxCompiler;
 use Pux\Tests\Fixtures\ConstructorSideEffectController;
+use Pux\Tests\Fixtures\PlainResource;
+use Pux\Tests\Fixtures\PrefixedAction;
 
 /**
  * Route cache files: Mux::compile() and MuxCompiler::compile() write a PHP file that returns
@@ -181,5 +183,54 @@ final class CompileToFileTest extends TestCase
         $this->expectExceptionMessage('Method missingAction not found in controller ' . ConstructorSideEffectController::class . '.');
 
         $compiler->merge($mux);
+    }
+
+    /**
+     * Failed before the L34 fix with TypeError: class_exists() was called with the object.
+     *
+     * @see PLAN-port-php82.md L34
+     */
+    public function test_merge_with_callback_validation_accepts_object_and_existing_method(): void
+    {
+        $mux = new Mux();
+        $mux->any('/x', [new PlainResource(), 'loadAction']);
+        $compiler = new MuxCompiler();
+        $compiler->callbackValidation = true;
+
+        $compiler->merge($mux);
+
+        self::assertSame('loadAction', $compiler->get()->dispatch('/x')[2][1]);
+    }
+
+    /**
+     * @see PLAN-port-php82.md L34
+     */
+    public function test_merge_with_callback_validation_rejects_object_and_unknown_method(): void
+    {
+        $mux = new Mux();
+        $mux->any('/x', [new PlainResource(), 'missingAction']);
+        $compiler = new MuxCompiler();
+        $compiler->callbackValidation = true;
+
+        $this->expectException(InvalidCallback::class);
+        $this->expectExceptionMessage('Method missingAction not found in controller ' . PlainResource::class . '.');
+
+        $compiler->merge($mux);
+    }
+
+    /**
+     * @see PLAN-port-php82.md L34
+     */
+    public function test_merge_with_callback_validation_accepts_closure_and_invokable_object(): void
+    {
+        $mux = new Mux();
+        $mux->any('/closure', static fn (): string => 'closure');
+        $mux->any('/invokable', new PrefixedAction('order'));
+        $compiler = new MuxCompiler();
+        $compiler->callbackValidation = true;
+
+        $compiler->merge($mux);
+
+        self::assertSame(2, $compiler->get()->length());
     }
 }
