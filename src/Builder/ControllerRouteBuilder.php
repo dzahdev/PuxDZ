@@ -4,15 +4,46 @@ namespace Pux\Builder;
 
 use ReflectionClass;
 use ReflectionMethod;
-use Pux\Mux;
+use Pux\Attribute\Route;
+use Pux\RequestMethod;
 
+/**
+ * Builds routes from the public *Action methods of a controller.
+ *
+ * The route of an action is read from the attribute #[Pux\Attribute\Route(path, method:)].
+ * Without the attribute, the docblock annotations @Route("/path") and @Method("GET") are read;
+ * they are deprecated since 3.0 (see parseDocblockAnnotations()). When a method has the
+ * attribute, its docblock is not read.
+ */
 class ControllerRouteBuilder
 {
     /**
-     * @param string $reflectionMethod request method
-     * @return array Annotation info
+     * @param ReflectionMethod $reflectionMethod action method
+     * @return array Annotation info: 'Route' (path) and 'Method' (request method name), each optional
      */
     protected static function parseMethodAnnotation(ReflectionMethod $reflectionMethod)
+    {
+        $attributes = $reflectionMethod->getAttributes(Route::class);
+        if ($attributes !== []) {
+            $route = $attributes[0]->newInstance();
+
+            return $route->method === null
+                ? ['Route' => $route->path]
+                : ['Route' => $route->path, 'Method' => $route->method->name];
+        }
+
+        return self::parseDocblockAnnotations($reflectionMethod);
+    }
+
+    /**
+     * Reads @Route("/path") and @Method("GET") from the docblock of an action.
+     *
+     * @deprecated since 3.0, use the attribute #[Pux\Attribute\Route] on the action; the
+     *             docblock annotations are removed in 4.0
+     *
+     * @return array Annotation info: 'Route' (path) and 'Method' (request method name), each optional
+     */
+    private static function parseDocblockAnnotations(ReflectionMethod $reflectionMethod)
     {
         $annotations = [];
         if ($docComment = $reflectionMethod->getDocComment()) {
@@ -125,7 +156,7 @@ class ControllerRouteBuilder
             $route = [$path, $actionName];
 
             if (isset($annotations['Method'])) {
-                $route[] = ['method' => Mux::convertRequestMethodConstant($annotations['Method'])];
+                $route[] = ['method' => RequestMethod::fromName($annotations['Method'])->value];
             } else {
                 $route[] = [];
             }
