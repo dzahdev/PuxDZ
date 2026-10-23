@@ -105,6 +105,90 @@ final class CompileTest extends TestCase
         self::assertSame(['id' => '23'], self::match('/blog/:id.:format', '/blog/23', ['default' => ['format' => 'json']]));
     }
 
+    public function test_compile_variable_followed_by_text_captures_variable_and_requires_text(): void
+    {
+        self::assertSame(['id' => '5'], self::match('/user/:id/edit', '/user/5/edit'));
+        self::assertNull(self::match('/user/:id/edit', '/user/5/6/edit'));
+    }
+
+    public function test_compile_treats_dot_in_text_as_literal_character(): void
+    {
+        self::assertSame(['id' => '3'], self::match('/v1.0/:id', '/v1.0/3'));
+        self::assertNull(self::match('/v1.0/:id', '/v1x0/3'));
+    }
+
+    public function test_compile_with_require_accepts_value_matching_requirement(): void
+    {
+        self::assertSame(['name' => '42'], self::match('/hello/:name', '/hello/42', ['require' => ['name' => '\d+']]));
+    }
+
+    public function test_compile_with_require_rejects_value_violating_requirement(): void
+    {
+        self::assertNull(self::match('/hello/:name', '/hello/john', ['require' => ['name' => '\d+']]));
+    }
+
+    public function test_compile_with_require_may_let_variable_span_separators(): void
+    {
+        self::assertSame(
+            ['filters' => 'a/b'],
+            self::match('/search/:filters', '/search/a/b', ['require' => ['filters' => '.+']]),
+        );
+    }
+
+    public function test_compile_with_require_applies_inside_optional_group(): void
+    {
+        $options = ['require' => ['format' => 'json|xml']];
+
+        self::assertSame(['id' => '3', 'format' => 'json'], self::match('/blog/:id(.:format)', '/blog/3.json', $options));
+        self::assertNull(self::match('/blog/:id(.:format)', '/blog/3.yaml', $options));
+    }
+
+    public function test_compile_with_defaults_for_two_trailing_variables_makes_both_optional(): void
+    {
+        $options = ['default' => ['year' => '2000', 'month' => '1']];
+
+        self::assertSame(['year' => '2013', 'month' => '09'], self::match('/blog/:year/:month', '/blog/2013/09', $options));
+        self::assertSame(['year' => '2013'], self::match('/blog/:year/:month', '/blog/2013', $options));
+        self::assertSame([], self::match('/blog/:year/:month', '/blog', $options));
+    }
+
+    public function test_compile_with_default_for_last_variable_only_keeps_earlier_variable_required(): void
+    {
+        self::assertNull(self::match('/blog/:year/:month', '/blog', ['default' => ['month' => '1']]));
+    }
+
+    /**
+     * @return array<string, array{string, array<string, string>}>
+     */
+    public static function nestedOptionalPaths(): array
+    {
+        return [
+            'both omitted' => ['/a', []],
+            'outer given' => ['/a/1', ['b' => '1']],
+            'both given' => ['/a/1/2', ['b' => '1', 'c' => '2']],
+        ];
+    }
+
+    /**
+     * @param array<string, string> $expected
+     */
+    #[DataProvider('nestedOptionalPaths')]
+    public function test_compile_nested_optional_groups_match_each_depth(string $path, array $expected): void
+    {
+        self::assertSame($expected, self::match('/a(/:b(/:c))', $path));
+    }
+
+    public function test_compile_nested_optional_groups_list_variables_in_pattern_order(): void
+    {
+        self::assertSame(['b', 'c'], PatternCompiler::compile('/a(/:b(/:c))')['variables']);
+    }
+
+    public function test_compile_optional_group_followed_by_text_matches_with_and_without_group(): void
+    {
+        self::assertSame([], self::match('/a(/:b)/c', '/a/c'));
+        self::assertSame(['b' => '1'], self::match('/a(/:b)/c', '/a/1/c'));
+    }
+
     /**
      * @see PLAN-port-php82.md L8
      */
