@@ -3,8 +3,10 @@
 namespace Pux\Tests\Export;
 
 use PHPUnit\Framework\TestCase;
+use Pux\Exception\InvalidCallback;
 use Pux\Mux;
 use Pux\MuxCompiler;
+use Pux\Tests\Fixtures\ConstructorSideEffectController;
 
 /**
  * Route cache files: Mux::compile() and MuxCompiler::compile() write a PHP file that returns
@@ -138,6 +140,45 @@ final class CompileToFileTest extends TestCase
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Controller NoSuchController does not exist.');
+
+        $compiler->merge($mux);
+    }
+
+    /**
+     * Failed before the L18 fix: validation created the controller to call method_exists(), so
+     * the constructor ran (here it throws).
+     *
+     * @see PLAN-port-php82.md L18
+     */
+    public function test_merge_with_callback_validation_accepts_route_without_instantiating_controller(): void
+    {
+        $mux = new Mux();
+        $mux->any('/side', [ConstructorSideEffectController::class, 'indexAction']);
+        $compiler = new MuxCompiler();
+        $compiler->callbackValidation = true;
+
+        $compiler->merge($mux);
+
+        self::assertSame(
+            [false, '/side', [ConstructorSideEffectController::class, 'indexAction'], []],
+            $compiler->get()->dispatch('/side'),
+        );
+    }
+
+    /**
+     * Failed before the L18 fix with the exception of the constructor instead of InvalidCallback.
+     *
+     * @see PLAN-port-php82.md L18
+     */
+    public function test_merge_with_callback_validation_rejects_route_to_unknown_method(): void
+    {
+        $mux = new Mux();
+        $mux->any('/x', [ConstructorSideEffectController::class, 'missingAction']);
+        $compiler = new MuxCompiler();
+        $compiler->callbackValidation = true;
+
+        $this->expectException(InvalidCallback::class);
+        $this->expectExceptionMessage('Method missingAction not found in controller ' . ConstructorSideEffectController::class . '.');
 
         $compiler->merge($mux);
     }

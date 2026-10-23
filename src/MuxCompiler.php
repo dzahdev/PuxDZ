@@ -83,8 +83,10 @@ class MuxCompiler
     }
 
     /**
-     * validate controller classes and controller methods before compiling to 
-     * route cache.
+     * Validate controller classes and controller methods before compiling to route cache.
+     * The check reads the class only: no controller is instantiated, so constructors do not run.
+     *
+     * @throws InvalidCallback when a [class, method] callback names a missing class or method
      */
     public function validateRouteCallback(array $routes)
     {
@@ -97,9 +99,7 @@ class MuxCompiler
                     throw InvalidCallback::classNotFound($class);
                 }
 
-                // rebless a controller (extract this to common method)
-                $controller = new $class();
-                if (!method_exists($controller, $method)) {
+                if (!method_exists($class, $method)) {
                     throw InvalidCallback::methodNotFound($class, $method);
                 }
             }
