@@ -129,11 +129,16 @@ class RouteRequest implements RouteRequestMatcher
         return Pcre::match($pattern, (string) $this->serverParameters['QUERY_STRING'], $matches);
     }
 
+    /**
+     * SERVER_PORT is optional in the server array: without it the answer is false.
+     */
     public function portEqual($port)
     {
         if (isset($this->serverParameters['SERVER_PORT'])) {
             return intval($this->serverParameters['SERVER_PORT']) == intval($port);
         }
+
+        return false;
     }
 
     /**

@@ -91,6 +91,16 @@ final class MatcherTest extends TestCase
         self::assertFalse($request->portEqual('80'));
     }
 
+    /**
+     * Failed before the L27 fix: the method returned null.
+     *
+     * @see PLAN-port-php82.md L27
+     */
+    public function test_port_equal_without_server_port_returns_false(): void
+    {
+        self::assertFalse(RouteRequest::create('GET', '/')->portEqual(80));
+    }
+
     public function test_query_string_match_with_matching_regex_returns_true(): void
     {
         self::assertTrue(RouteRequest::create('GET', '/', ['QUERY_STRING' => 'page=2'])->queryStringMatch('#page=\d#'));
