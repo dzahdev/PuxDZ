@@ -237,6 +237,19 @@ final class CompileTest extends TestCase
     }
 
     /**
+     * Failed before the L28 fix: the route compiled, and preg_match on it emitted a warning.
+     *
+     * @see PLAN-port-php82.md L28
+     */
+    public function test_compile_with_require_that_is_not_a_regex_throws_pattern_syntax(): void
+    {
+        $this->expectException(PatternSyntax::class);
+        $this->expectExceptionMessage('/item/:id');
+
+        PatternCompiler::compile('/item/:id', ['require' => ['id' => '[']]);
+    }
+
+    /**
      * Failed before the L9 fix: a colon without a separator character before it was text.
      *
      * @see PLAN-port-php82.md L9

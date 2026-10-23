@@ -21,7 +21,8 @@ use Pux\Exception\PatternSyntax;
  *   right after another token, has no separator (":id", "(:id)").
  * - "(" ... ")" is an optional group; groups may follow one another and nest.
  * - Anything else is literal text. A colon not followed by a name character is text.
- * - An unclosed "(" or a ")" without its "(" throws PatternSyntax.
+ * - An unclosed "(" or a ")" without its "(" throws PatternSyntax, and so does a 'require'
+ *   expression that makes the compiled expression invalid.
  *
  * The default expression of a variable is a negated character class of the characters next to
  * it: the first character of the text right before it (or its own separator when there is no
@@ -47,12 +48,13 @@ class PatternCompiler
      *
      * @return array<string, mixed> the options plus 'variables', 'regex', 'tokens', 'compiled' and 'pattern'
      *
-     * @throws PatternSyntax when the pattern has an unbalanced parenthesis
+     * @throws PatternSyntax when the pattern has an unbalanced parenthesis or a 'require'
+     *                       expression makes the result invalid
      */
     public static function compile(string $pattern, array $options = []): array
     {
         $route = self::compilePattern($pattern, $options);
-        $route['compiled'] = sprintf('#^%s$#xs', $route['regex']);
+        $route['compiled'] = self::assertCompiles($pattern, sprintf('#^%s$#xs', $route['regex']));
         $route['pattern'] = $pattern;
 
         return $route;
@@ -65,12 +67,13 @@ class PatternCompiler
      *
      * @return array<string, mixed>
      *
-     * @throws PatternSyntax when the pattern has an unbalanced parenthesis
+     * @throws PatternSyntax when the pattern has an unbalanced parenthesis or a 'require'
+     *                       expression makes the result invalid
      */
     public static function compilePrefix(string $pattern, array $options = []): array
     {
         $route = self::compilePattern($pattern, $options);
-        $route['compiled'] = sprintf('#^%s#xs', $route['regex']);
+        $route['compiled'] = self::assertCompiles($pattern, sprintf('#^%s#xs', $route['regex']));
         $route['pattern'] = $pattern;
 
         return $route;
@@ -94,6 +97,23 @@ class PatternCompiler
         $options['tokens'] = $tokens;
 
         return $options;
+    }
+
+    /**
+     * Returns $compiled after checking that PCRE compiles it: a 'require' expression is inserted
+     * as given, so it can break the result.
+     *
+     * @throws PatternSyntax
+     */
+    private static function assertCompiles(string $pattern, string $compiled): string
+    {
+        try {
+            Pcre::match($compiled, '');
+        } catch (PatternSyntax $e) {
+            throw PatternSyntax::invalidRoutePattern($pattern, $e);
+        }
+
+        return $compiled;
     }
 
     /**

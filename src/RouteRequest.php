@@ -119,7 +119,7 @@ class RouteRequest implements RouteRequestMatcher
 
     public function queryStringMatch($pattern, array &$matches = [])
     {
-        return preg_match($pattern, (string) $this->serverParameters['QUERY_STRING'], $matches) === 1;
+        return Pcre::match($pattern, (string) $this->serverParameters['QUERY_STRING'], $matches);
     }
 
     public function portEqual($port)
@@ -155,7 +155,7 @@ class RouteRequest implements RouteRequestMatcher
 
     public function pathMatch($pattern, array &$matches = [])
     {
-        return preg_match($pattern, $this->path, $matches) === 1;
+        return Pcre::match($pattern, $this->path, $matches);
     }
 
     public function pathEqual($path)
@@ -181,7 +181,7 @@ class RouteRequest implements RouteRequestMatcher
     public function hostMatch($host, array &$matches = [])
     {
         if (isset($this->serverParameters['HTTP_HOST'])) {
-            return preg_match($host, (string) $this->serverParameters['HTTP_HOST'], $matches) === 1;
+            return Pcre::match($host, (string) $this->serverParameters['HTTP_HOST'], $matches);
         }
 
         // the HTTP HOST is not defined.
