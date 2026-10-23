@@ -504,7 +504,9 @@ class Mux implements IteratorAggregate
     /**
      * url method generates the related URL for a route.
      *
-     * XXX: Untested
+     * A static route returns its path. A PCRE route replaces each ':name' of its source pattern
+     * with $params['name'] and drops optional groups whose variables are not given. Values are
+     * inserted as given: the caller encodes them (rawurlencode for a path segment).
      *
      * @see https://github.com/c9s/Pux/issues/4
      *
@@ -512,6 +514,8 @@ class Mux implements IteratorAggregate
      * @param array  $params the parameters for an url
      *
      * @return string
+     *
+     * @throws \RuntimeException when no route has the id
      */
     public function url($id, array $params = [])
     {
@@ -519,6 +523,10 @@ class Mux implements IteratorAggregate
 
         if (!isset($route)) {
             throw new \RuntimeException('Named route not found for id: '.$id);
+        }
+
+        if (!$route[0]) {
+            return $route[1];
         }
 
         $search = [];
