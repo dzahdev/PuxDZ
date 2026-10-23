@@ -210,9 +210,9 @@ anchored at both ends:
   `/mydocuments/cv`.
 - Any other character is literal text, `:` included when no name character follows it.
 
-An optional group that is followed by a required variable (`/a(/:b)/:c`) captures an absent
-variable as the empty string, so `vars` holds `'b' => ''` and the option `default` does not
-apply to it. Place optional groups at the end of the pattern when they have defaults.
+The variables of an optional group that is not in the path are left out of `vars`, also when a
+required variable follows the group: `/a(/:b)/:c` with `['default' => ['b' => 'x']]` dispatches
+`/a/1` with `vars` holding `c` only, and the callback gets `b = 'x'`, `c = '1'`.
 
 ## Request constraints
 

@@ -3,7 +3,7 @@
 This file lists every incompatible change between the 2.0.x-dev branch of Pux (package
 `corneltek/pux`, commit 30bc692 of 2023-03-28) and PuxDZ 3.0.0. Each entry gives the behavior
 before, the behavior after and what to change in application code. The IDs in parentheses
-(R1-R6, L1-L37, P1-P6) are the defect IDs listed in [CHANGES.md](CHANGES.md).
+(R1-R6, L1-L38, P1-P6) are the defect IDs listed in [CHANGES.md](CHANGES.md).
 
 Order of work for an upgrade:
 
@@ -156,6 +156,14 @@ Order of work for an upgrade:
   backtrack limit), the route was skipped as if it did not match.
 - After: `dispatch()` and `match()` throw `Pux\Exception\PatternSyntax`.
 - What to do: fix the `require` expression or the cache file named in the exception.
+
+**Variables of absent optional groups (L38).**
+- Before: an optional group that was not in the path and was followed by a matched group was
+  reported by `preg_match()` as the empty string: `/a(/:b)/:c` dispatched `/a/1` with
+  `vars['b'] === ''`, and the route default of `b` was not bound.
+- After: `vars` holds only the groups that took part in the match (`c` here), so the route
+  default of `b` is bound. A variable whose group matched the empty string keeps `''`.
+- What to do: replace checks for `$vars['b'] === ''` with `isset($vars['b'])` or a route default.
 
 **`url()` (L24).**
 - Before: a static named route produced the warning `Undefined array key "pattern"` and returned

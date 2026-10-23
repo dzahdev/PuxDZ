@@ -418,8 +418,10 @@ final class Mux implements IteratorAggregate
             $matches = [];
             if ($route[0]) {
                 // A PCRE failure at match time (for example the backtrack limit) throws
-                // PatternSyntax instead of reading as "no match".
-                if (!Pcre::match($route[1], $path, $matches)) {
+                // PatternSyntax instead of reading as "no match". A variable of an optional
+                // group that is not in the path is left out of 'vars', so its route default
+                // applies.
+                if (!Pcre::matchParticipating($route[1], $path, $matches)) {
                     continue;
                 }
                 $route[3]['vars'] = $matches;

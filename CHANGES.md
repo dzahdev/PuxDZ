@@ -97,6 +97,8 @@ incompatibilities); `#N` is the issue or pull request number in c9s/Pux. L31 was
 - `compile()` throws `CacheWriteFailed` when the cache file cannot be written (L36).
 - `dispatch()` throws `PatternSyntax` when a route expression fails at match time instead of
   skipping the route (L37).
+- The variables of an optional group that is not in the path are left out of `vars` also when
+  a later group matched, so their route defaults are bound (L38).
 - `match()` and `dispatch()` declare `?RouteRequest` explicitly; the implicit nullable
   parameter was deprecated in PHP 8.4 (P1).
 - `RESTfulMuxBuilder::__construct(?Mux $mux = null, array $options = [])` has no reference

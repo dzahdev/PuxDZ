@@ -67,6 +67,24 @@ final class PcreRouteTest extends TestCase
     }
 
     /**
+     * An optional group that is not in the path leaves its variable out of 'vars', also when a
+     * required variable follows the group. Failed before the L38 fix: preg_match() reported the
+     * group as the empty string, so 'vars' held 'b' => ''.
+     *
+     * @see PLAN-port-php82.md L38
+     */
+    public function test_dispatch_with_omitted_optional_group_before_variable_leaves_its_variable_out_of_vars(): void
+    {
+        $mux = new Mux();
+        $mux->add('/a(/:b)/:c', ['ProductController', 'itemAction'], ['default' => ['b' => 'x']]);
+
+        $vars = $mux->dispatch('/a/1')[3]['vars'];
+
+        self::assertArrayNotHasKey('b', $vars);
+        self::assertSame('1', $vars['c']);
+    }
+
+    /**
      * Failed before the L37 fix: preg_match() returned false on the backtrack limit and the
      * route was skipped, so dispatch() returned null as for a path that matches no route.
      * pcre.jit is turned off because the JIT does not apply pcre.backtrack_limit.

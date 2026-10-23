@@ -107,6 +107,21 @@ final class ExecuteTest extends TestCase
     }
 
     /**
+     * The route default applies to the variable of an optional group that is not in the path,
+     * also when a required variable follows the group. Failed before the L38 fix with
+     * "b= c=1": the absent group was bound as the empty string.
+     *
+     * @see PLAN-port-php82.md L38
+     */
+    public function test_execute_uses_route_default_for_omitted_optional_group_before_required_variable(): void
+    {
+        $mux = new Mux();
+        $mux->any('/a(/:b)/:c', static fn (string $b, string $c): string => "b=$b c=$c", ['default' => ['b' => 'x']]);
+
+        self::assertSame('b=x c=1', self::executeDispatched($mux, '/a/1'));
+    }
+
+    /**
      * Upstream issue #112. Failed before the L7 fix with ArgumentCountError: binding was by
      * name only.
      *
