@@ -39,4 +39,27 @@ final class PcreRouteTest extends TestCase
 
         self::assertNull($mux->dispatch('/hello/john-doe'));
     }
+
+    /**
+     * Upstream issue #109: a catch-all variable is written with a 'require' expression that
+     * accepts "/"; there is no "+" modifier after a variable name.
+     */
+    public function test_dispatch_catch_all_variable_with_require_captures_remaining_segments(): void
+    {
+        $mux = new Mux();
+        $mux->add('/search/:filters', ['ProductController', 'listAction'], ['require' => ['filters' => '.+']]);
+
+        self::assertSame('a/b/c', $mux->dispatch('/search/a/b/c')[3]['vars']['filters']);
+    }
+
+    /**
+     * Upstream issue #109: without 'require' a variable stops at "/".
+     */
+    public function test_dispatch_variable_without_require_rejects_path_with_more_segments(): void
+    {
+        $mux = new Mux();
+        $mux->add('/search/:filters', ['ProductController', 'listAction']);
+
+        self::assertNull($mux->dispatch('/search/a/b/c'));
+    }
 }

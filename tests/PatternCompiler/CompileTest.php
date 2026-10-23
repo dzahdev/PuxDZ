@@ -307,4 +307,21 @@ final class CompileTest extends TestCase
         self::assertSame(['name' => 'x', 'id' => '5'], self::match('/:name :id', '/x 5'));
         self::assertNull(self::match('/:name :id', '/x5'));
     }
+
+    /**
+     * Upstream issue #109.
+     */
+    public function test_compile_variable_with_catch_all_require_captures_slashes(): void
+    {
+        self::assertSame(['filters' => 'a/b/c'], self::match('/search/:filters', '/search/a/b/c', ['require' => ['filters' => '.+']]));
+    }
+
+    /**
+     * Upstream issue #109: "+" after a variable name is literal text, not a repetition modifier.
+     */
+    public function test_compile_plus_after_variable_name_is_literal_text(): void
+    {
+        self::assertSame(['filters' => 'a/b'], self::match('/search/:filters+', '/search/a/b+', ['require' => ['filters' => '.+']]));
+        self::assertNull(self::match('/search/:filters+', '/search/a/b', ['require' => ['filters' => '.+']]));
+    }
 }
