@@ -67,7 +67,12 @@ final class RequestConstraintTest extends TestCase
     }
 
     /**
+     * dispatch() without a RouteRequest uses the nullable parameter that P1 made explicit: with
+     * the implicitly nullable "RouteRequest $routeRequest = null", PHP 8.4 and 8.5 report a
+     * deprecation when Mux is loaded, and the suite fails on it (failOnDeprecation).
+     *
      * @see PLAN-port-php82.md L4
+     * @see PLAN-port-php82.md P1
      */
     public function test_dispatch_without_request_to_route_without_constraint_returns_route(): void
     {

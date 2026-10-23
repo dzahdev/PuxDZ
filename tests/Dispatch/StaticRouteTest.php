@@ -62,6 +62,12 @@ final class StaticRouteTest extends TestCase
         );
     }
 
+    /**
+     * Mux is an IteratorAggregate; getIterator() declares its return type since the P3 fix
+     * (before: #[\ReturnTypeWillChange] without a type, the same iteration).
+     *
+     * @see PLAN-port-php82.md P3
+     */
     public function test_iterating_mux_yields_route_paths_in_insertion_order(): void
     {
         $mux = new Mux();

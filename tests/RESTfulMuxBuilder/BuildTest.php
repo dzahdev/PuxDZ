@@ -35,8 +35,12 @@ final class BuildTest extends TestCase
     /**
      * The default prefix is "/", and the resource path has one slash before the resource id.
      * Failed before the L39 fix: the path was "//product/:id", so "/product/10" matched no route.
+     * The builder is created without a Mux, through the ?Mux parameter of P2: with the former
+     * "Mux & $mux = null", PHP 8.4 and 8.5 report a deprecation when the class is loaded, and
+     * the suite fails on it (failOnDeprecation).
      *
      * @see PLAN-port-php82.md L39
+     * @see PLAN-port-php82.md P2
      */
     public function test_build_with_default_prefix_mounts_resource_at_root_with_single_slash(): void
     {
