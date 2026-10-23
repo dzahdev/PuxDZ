@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pux\Tests\ControllerRouteBuilder;
 
 use PHPUnit\Framework\TestCase;

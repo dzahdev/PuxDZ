@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pux\Tests\Fixtures;
 
 use Pux\Attribute\Route;
@@ -12,23 +14,33 @@ use Pux\RequestMethod;
 class AttributeRoutesController
 {
     #[Route('/items', method: RequestMethod::GET)]
-    public function listAction() { }
+    public function listAction()
+    {
+    }
 
     #[Route('/anything')]
-    public function anyAction() { }
+    public function anyAction()
+    {
+    }
 
     /**
      * @Route("/docblock")
      * @Method("POST")
      */
     #[Route('/attribute', method: RequestMethod::PUT)]
-    public function bothAction() { }
+    public function bothAction()
+    {
+    }
 
     /**
      * @Method("POST")
      */
     #[Route('/no-method')]
-    public function attributeWithoutMethodAction() { }
+    public function attributeWithoutMethodAction()
+    {
+    }
 
-    public function plainAction() { }
+    public function plainAction()
+    {
+    }
 }

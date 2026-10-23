@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pux\Tests\PatternCompiler;
 
 use PHPUnit\Framework\Attributes\DataProvider;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pux\Tests\Fixtures;
 
 /**
@@ -7,5 +9,7 @@ namespace Pux\Tests\Fixtures;
  */
 class AttributeRoutesChildController extends AttributeRoutesController
 {
-    public function listAction() { }
+    public function listAction()
+    {
+    }
 }

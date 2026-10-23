@@ -1,8 +1,5 @@
 <?php
 
-// declare_strict_types stays off until Stage 5, when every module gets strict types under a
-// green suite (plan invariant 6).
-
 $finder = (new PhpCsFixer\Finder())
     ->in([
         __DIR__ . '/src',
@@ -15,7 +12,7 @@ return (new PhpCsFixer\Config())
     ->setRules([
         '@PSR12' => true,
         '@PHP82Migration' => true,
-        'declare_strict_types' => false,
+        'declare_strict_types' => true,
     ])
     ->setCacheFile(__DIR__ . '/.php-cs-fixer.cache')
     ->setFinder($finder);

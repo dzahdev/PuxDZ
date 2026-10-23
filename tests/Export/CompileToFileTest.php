@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pux\Tests\Export;
 
 use PHPUnit\Framework\TestCase;

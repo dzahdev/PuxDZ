@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pux\Tests\Fixtures;
 
 /**
@@ -9,32 +11,46 @@ namespace Pux\Tests\Fixtures;
  */
 class AnnotatedActionsController
 {
-    public function indexAction() { }
+    public function indexAction()
+    {
+    }
 
     /**
      * @Method("GET")
      */
-    public function itemAction() { }
+    public function itemAction()
+    {
+    }
 
     /**
      * @Route("/add")
      * @Method("POST")
      */
-    public function addAction() { }
+    public function addAction()
+    {
+    }
 
     /**
      * @Route("/update")
      * @Method("PUT")
      */
-    public function updateAction() { }
+    public function updateAction()
+    {
+    }
 
     /**
      * @Route("/delete")
      * @Method("DELETE")
      */
-    public function delAction() { }
+    public function delAction()
+    {
+    }
 
-    public function fooBarAction() { }
+    public function fooBarAction()
+    {
+    }
 
-    public function helper() { }
+    public function helper()
+    {
+    }
 }
