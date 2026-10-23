@@ -31,8 +31,15 @@ use Pux\Exception\PatternSyntax;
  * character right after its name. A variable with none of these (":id" alone) excludes "/".
  * The 'require' option replaces the default expression; the 'default' option makes the trailing
  * variables of a level optional.
+ *
+ * @phpstan-type Token array{0: self::TOKEN_TYPE_OPTIONAL, 1: string, 2: string}|array{0: self::TOKEN_TYPE_VARIABLE, 1: string, 2: string, 3: string}|array{0: self::TOKEN_TYPE_TEXT, 1: string}
+ * @phpstan-type CompiledPattern array{variables: list<string>, regex: string, tokens: list<Token>, compiled: string, pattern: string, ...<string, mixed>}
+ * @phpstan-type TextNode array{0: 'text', 1: non-empty-string}
+ * @phpstan-type VariableNode array{0: 'variable', 1: string, 2: string, 3: ?string}
+ * @phpstan-type GroupNode array{0: 'group', 1: string, 2: string, 3: list<string>, 4: ?string}
+ * @phpstan-type Node TextNode|VariableNode|GroupNode
  */
-class PatternCompiler
+final class PatternCompiler
 {
     final public const TOKEN_TYPE_OPTIONAL = 1;
 
@@ -50,18 +57,14 @@ class PatternCompiler
      *
      * @param array<string, mixed> $options route options; 'require' and 'default' are read
      *
-     * @return array<string, mixed> the options plus 'variables', 'regex', 'tokens', 'compiled' and 'pattern'
+     * @return CompiledPattern the options plus 'variables', 'regex', 'tokens', 'compiled' and 'pattern'
      *
      * @throws PatternSyntax when the pattern has an unbalanced parenthesis or a 'require'
      *                       expression makes the result invalid
      */
     public static function compile(string $pattern, array $options = []): array
     {
-        $route = self::compilePattern($pattern, $options);
-        $route['compiled'] = self::assertCompiles($pattern, sprintf('#^%s$#xs', $route['regex']));
-        $route['pattern'] = $pattern;
-
-        return $route;
+        return self::compileAnchored($pattern, $options, '#^%s$#xs');
     }
 
     /**
@@ -69,38 +72,66 @@ class PatternCompiler
      *
      * @param array<string, mixed> $options
      *
-     * @return array<string, mixed>
+     * @return CompiledPattern
      *
      * @throws PatternSyntax when the pattern has an unbalanced parenthesis or a 'require'
      *                       expression makes the result invalid
      */
     public static function compilePrefix(string $pattern, array $options = []): array
     {
-        $route = self::compilePattern($pattern, $options);
-        $route['compiled'] = self::assertCompiles($pattern, sprintf('#^%s#xs', $route['regex']));
-        $route['pattern'] = $pattern;
-
-        return $route;
+        return self::compileAnchored($pattern, $options, '#^%s#xs');
     }
 
     /**
      * @param array<string, mixed> $options
      *
-     * @return array<string, mixed> the options plus 'variables', 'regex' (no delimiters) and 'tokens'
+     * @return array{variables: list<string>, regex: string, tokens: list<Token>, ...<string, mixed>} the options plus 'variables', 'regex' (no delimiters) and 'tokens'
      *
      * @throws PatternSyntax when the pattern has an unbalanced parenthesis
      */
     public static function compilePattern(string $pattern, array $options = []): array
     {
         $offset = 0;
-        $nodes = self::parseLevel($pattern, $offset, null);
-        [$regex, $tokens, $variables] = self::emitLevel($nodes, $options);
+        $require = self::arrayOption($options, 'require');
+        $default = self::arrayOption($options, 'default');
+        [$regex, $tokens, $variables] = self::emitLevel(self::parseLevel($pattern, $offset, null, $require, $default), $require, $default);
 
         $options['variables'] = $variables;
         $options['regex'] = $regex;
         $options['tokens'] = $tokens;
 
         return $options;
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     *
+     * @return CompiledPattern
+     *
+     * @throws PatternSyntax
+     */
+    private static function compileAnchored(string $pattern, array $options, string $format): array
+    {
+        $route = self::compilePattern($pattern, $options);
+        $route['compiled'] = self::assertCompiles($pattern, sprintf($format, $route['regex']));
+        $route['pattern'] = $pattern;
+
+        return $route;
+    }
+
+    /**
+     * The option 'require' or 'default': a map of variable name to value. An option that is
+     * absent or not an array names no variable.
+     *
+     * @param array<string, mixed> $options
+     *
+     * @return array<array-key, mixed>
+     */
+    private static function arrayOption(array $options, string $key): array
+    {
+        $value = $options[$key] ?? null;
+
+        return is_array($value) ? $value : [];
     }
 
     /**
@@ -122,16 +153,20 @@ class PatternCompiler
 
     /**
      * Reads one level of the pattern from $offset: up to the end of the pattern (top level) or
-     * up to the ")" that closes the group opened at $groupOffset, which is consumed.
+     * up to the ")" that closes the group opened at $groupOffset, which is consumed. A group is
+     * compiled when it closes, so its node holds its expression instead of its children.
      *
      * Node shapes:
      *   ['text', string $text]
      *   ['variable', string $separator, string $name, ?string $nextCharacter]
-     *   ['group', string $content, list<array> $children]
+     *   ['group', string $content, string $regex, list<string> $variables, ?string $leadingCharacter]
      *
-     * @return list<array<int, mixed>>
+     * @param array<array-key, mixed> $require the option 'require'
+     * @param array<array-key, mixed> $default the option 'default'
+     *
+     * @return list<Node>
      */
-    private static function parseLevel(string $pattern, int &$offset, ?int $groupOffset): array
+    private static function parseLevel(string $pattern, int &$offset, ?int $groupOffset, array $require, array $default): array
     {
         $length = strlen($pattern);
         $nodes = [];
@@ -145,8 +180,9 @@ class PatternCompiler
                 $text = '';
                 $open = $offset;
                 ++$offset;
-                $children = self::parseLevel($pattern, $offset, $open);
-                $nodes[] = ['group', substr($pattern, $open + 1, $offset - $open - 2), $children];
+                $children = self::parseLevel($pattern, $offset, $open, $require, $default);
+                [$groupRegex, , $groupVariables] = self::emitLevel($children, $require, $default);
+                $nodes[] = ['group', substr($pattern, $open + 1, $offset - $open - 2), $groupRegex, $groupVariables, self::firstCharacter($children)];
 
                 continue;
             }
@@ -199,9 +235,9 @@ class PatternCompiler
     }
 
     /**
-     * @param list<array<int, mixed>> $nodes
+     * @param list<Node> $nodes
      *
-     * @return list<array<int, mixed>>
+     * @return list<Node>
      */
     private static function appendText(array $nodes, string $text): array
     {
@@ -215,12 +251,13 @@ class PatternCompiler
     /**
      * Builds the expression of one level.
      *
-     * @param list<array<int, mixed>> $nodes
-     * @param array<string, mixed>    $options
+     * @param list<Node>              $nodes
+     * @param array<array-key, mixed> $require the option 'require'
+     * @param array<array-key, mixed> $default the option 'default'
      *
-     * @return array{string, list<array<int, mixed>>, list<string>} expression, tokens, variable names
+     * @return array{string, list<Token>, list<string>} expression, tokens, variable names
      */
-    private static function emitLevel(array $nodes, array $options): array
+    private static function emitLevel(array $nodes, array $require, array $default): array
     {
         $tokens = [];
         $variables = [];
@@ -231,33 +268,29 @@ class PatternCompiler
                     $tokens[] = [self::TOKEN_TYPE_TEXT, $node[1]];
                     break;
                 case 'group':
-                    [$groupRegex, , $groupVariables] = self::emitLevel($node[2], [
-                        'default' => $options['default'] ?? null,
-                        'require' => $options['require'] ?? null,
-                    ]);
-                    $tokens[] = [self::TOKEN_TYPE_OPTIONAL, $node[1] === '' ? '' : $node[1][0], $groupRegex];
-                    array_push($variables, ...$groupVariables);
+                    $tokens[] = [self::TOKEN_TYPE_OPTIONAL, $node[1] === '' ? '' : $node[1][0], $node[2]];
+                    array_push($variables, ...$node[3]);
                     break;
                 default:
                     $name = $node[2];
-                    $required = $options['require'][$name] ?? null;
+                    $required = $require[$name] ?? null;
                     $regex = is_string($required) && $required !== ''
                         ? $required
-                        : self::defaultVariableRegex($nodes, $index);
+                        : self::defaultVariableRegex($nodes, $index, $node);
                     $tokens[] = [self::TOKEN_TYPE_VARIABLE, $node[1], $regex, $name];
                     $variables[] = $name;
             }
         }
 
-        return [self::assemble($tokens, $options), $tokens, $variables];
+        return [self::assemble($tokens, $default), $tokens, $variables];
     }
 
     /**
-     * @param list<array<int, mixed>> $nodes
+     * @param list<Node>   $nodes
+     * @param VariableNode $node  the variable at $index
      */
-    private static function defaultVariableRegex(array $nodes, int $index): string
+    private static function defaultVariableRegex(array $nodes, int $index, array $node): string
     {
-        $node = $nodes[$index];
         $previous = $nodes[$index - 1] ?? null;
         $excluded = [];
 
@@ -290,11 +323,10 @@ class PatternCompiler
     }
 
     /**
-     * The character a variable or a group starts with: the separator of a variable, the first
-     * character of the content of a group (of its first child for a group that opens with
-     * another group); null when there is none.
+     * The character a variable or a group starts with: the separator of a variable, the leading
+     * character of the children of a group (see firstCharacter()); null when there is none.
      *
-     * @param array<int, mixed> $node
+     * @param VariableNode|GroupNode $node
      */
     private static function leadingCharacter(array $node): ?string
     {
@@ -302,7 +334,19 @@ class PatternCompiler
             return $node[1] !== '' ? $node[1] : null;
         }
 
-        $first = $node[2][0] ?? null;
+        return $node[4];
+    }
+
+    /**
+     * The character the content of a group starts with, read from its first child: the first
+     * character of a text, the separator of a variable, the first character of the content of
+     * a nested group; null for an empty group or a first child without one.
+     *
+     * @param list<Node> $children
+     */
+    private static function firstCharacter(array $children): ?string
+    {
+        $first = $children[0] ?? null;
         if ($first === null) {
             return null;
         }
@@ -310,7 +354,7 @@ class PatternCompiler
         return match ($first[0]) {
             'text' => $first[1][0],
             'variable' => $first[1] !== '' ? $first[1] : null,
-            default => $first[1] !== '' ? $first[1][0] : null,
+            'group' => $first[1] !== '' ? $first[1][0] : null,
         };
     }
 
@@ -319,14 +363,14 @@ class PatternCompiler
      * line, indented four spaces per nesting level. Trailing variables that have a 'default'
      * become nested optional groups.
      *
-     * @param list<array<int, mixed>> $tokens
-     * @param array<string, mixed>    $options
+     * @param list<Token>             $tokens
+     * @param array<array-key, mixed> $default the option 'default'
      */
-    private static function assemble(array $tokens, array $options): string
+    private static function assemble(array $tokens, array $default): string
     {
         $firstOptional = null;
         for ($i = count($tokens) - 1; $i >= 0; --$i) {
-            if ($tokens[$i][0] !== self::TOKEN_TYPE_VARIABLE || !isset($options['default'][$tokens[$i][3]])) {
+            if ($tokens[$i][0] !== self::TOKEN_TYPE_VARIABLE || !isset($default[$tokens[$i][3]])) {
                 break;
             }
             $firstOptional = $i;
@@ -335,8 +379,9 @@ class PatternCompiler
         $regex = '';
         $indent = 1;
 
-        if (count($tokens) === 1 && $firstOptional === 0) {
-            $token = $tokens[0];
+        $single = count($tokens) === 1 && $firstOptional === 0 ? $tokens[0] : null;
+        if ($single !== null && $single[0] === self::TOKEN_TYPE_VARIABLE) {
+            $token = $single;
             ++$indent;
             $regex .= self::indent($indent) . self::quote($token[1]) . "(?:\n";
             $regex .= self::indent($indent) . sprintf("(?P<%s>%s)\n", $token[3], $token[2]);
