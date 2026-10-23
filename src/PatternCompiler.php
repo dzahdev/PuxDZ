@@ -20,7 +20,8 @@ use Pux\Exception\PatternSyntax;
  *   literally in front of the variable. A variable at the start of the pattern or of a group, or
  *   right after another token, has no separator (":id", "(:id)").
  * - Text in parentheses is an optional group; groups may follow one another and nest.
- * - Anything else is literal text. A colon not followed by a name character is text.
+ * - Anything else is literal text, white space included. A colon not followed by a name
+ *   character is text.
  * - An unclosed "(" or a ")" without its "(" throws PatternSyntax, and so does a 'require'
  *   expression that makes the compiled expression invalid.
  *
@@ -40,6 +41,9 @@ class PatternCompiler
     final public const TOKEN_TYPE_TEXT = 3;
 
     private const NAME_CHARACTERS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_';
+
+    /** White space that the x flag ignores, mapped to escape sequences PCRE matches literally. */
+    private const WHITE_SPACE_ESCAPES = [' ' => '\\ ', "\t" => '\\t', "\n" => '\\n', "\r" => '\\r', "\f" => '\\f', "\v" => '\\x0B'];
 
     /**
      * Compiles a pattern into an expression anchored at both ends.
@@ -334,13 +338,13 @@ class PatternCompiler
         if (count($tokens) === 1 && $firstOptional === 0) {
             $token = $tokens[0];
             ++$indent;
-            $regex .= self::indent($indent) . preg_quote($token[1], '#') . "(?:\n";
+            $regex .= self::indent($indent) . self::quote($token[1]) . "(?:\n";
             $regex .= self::indent($indent) . sprintf("(?P<%s>%s)\n", $token[3], $token[2]);
         } else {
             foreach ($tokens as $i => $token) {
                 switch ($token[0]) {
                     case self::TOKEN_TYPE_TEXT:
-                        $regex .= self::indent($indent) . preg_quote($token[1], '#') . "\n";
+                        $regex .= self::indent($indent) . self::quote($token[1]) . "\n";
                         break;
                     case self::TOKEN_TYPE_OPTIONAL:
                         $regex .= self::indent($indent) . "(?:\n" . $token[2] . self::indent($indent) . ")?\n";
@@ -350,7 +354,7 @@ class PatternCompiler
                             $regex .= self::indent($indent) . "(?:\n";
                             ++$indent;
                         }
-                        $regex .= self::indent($indent) . sprintf("%s(?P<%s>%s)\n", preg_quote($token[1], '#'), $token[3], $token[2]);
+                        $regex .= self::indent($indent) . sprintf("%s(?P<%s>%s)\n", self::quote($token[1]), $token[3], $token[2]);
                 }
             }
         }
@@ -360,6 +364,16 @@ class PatternCompiler
         }
 
         return $regex;
+    }
+
+    /**
+     * Quotes literal text for the x flag: preg_quote() leaves white space as it is, and the x
+     * flag ignores unescaped white space outside character classes, so each white space
+     * character is replaced with its escape sequence as well.
+     */
+    private static function quote(string $text): string
+    {
+        return strtr(preg_quote($text, '#'), self::WHITE_SPACE_ESCAPES);
     }
 
     private static function indent(int $level): string

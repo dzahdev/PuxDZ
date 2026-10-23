@@ -274,4 +274,37 @@ final class CompileTest extends TestCase
     {
         self::assertSame(['id' => '7', 'format' => 'json'], self::match('/item/:id(:format)', '/item/7json', ['require' => ['id' => '\d+']]));
     }
+
+    /**
+     * Failed before the L29 fix: the x flag of the compiled expression dropped the unescaped
+     * space, so "/a b/:id" matched "/ab/1". Paths are matched as given: the caller decodes them
+     * first ("/a%20b/1" is not "/a b/1").
+     *
+     * @see PLAN-port-php82.md L29
+     */
+    public function test_compile_space_in_text_rejects_path_without_it(): void
+    {
+        self::assertNull(self::match('/a b/:id', '/ab/1'));
+    }
+
+    /**
+     * Failed before the L29 fix (the space was dropped from the expression).
+     *
+     * @see PLAN-port-php82.md L29
+     */
+    public function test_compile_space_in_text_matches_path_with_it(): void
+    {
+        self::assertSame(['id' => '1'], self::match('/a b/:id', '/a b/1'));
+    }
+
+    /**
+     * Failed before the L29 fix (the space was dropped from the expression).
+     *
+     * @see PLAN-port-php82.md L29
+     */
+    public function test_compile_space_as_variable_separator_is_required_before_variable(): void
+    {
+        self::assertSame(['name' => 'x', 'id' => '5'], self::match('/:name :id', '/x 5'));
+        self::assertNull(self::match('/:name :id', '/x5'));
+    }
 }
