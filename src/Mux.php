@@ -318,6 +318,16 @@ class Mux implements IteratorAggregate
         };
     }
 
+    /**
+     * HTTPS is optional in the server array: absent, empty or 'off' (IIS) means plain HTTP.
+     */
+    private static function isHttps(RouteRequest $routeRequest)
+    {
+        $https = (string) ($routeRequest->serverParameters['HTTPS'] ?? '');
+
+        return $https !== '' && strcasecmp($https, 'off') !== 0;
+    }
+
     private static function requestMethodOf(RouteRequest $routeRequest)
     {
         return self::convertRequestMethodConstant($routeRequest->getRequestMethod());
@@ -326,9 +336,10 @@ class Mux implements IteratorAggregate
     /**
      * Find a matched route with the path constraint in the current mux object.
      *
-     * The request method comes from $routeRequest. Without it, the request is built with
-     * RouteRequest::fromServer() when the first route with a 'method' constraint matches the
-     * path, so routes without constraints match without any request; fromServer throws
+     * The request method and HTTPS come from $routeRequest. A route with 'secure' => true
+     * requires HTTPS (the HTTPS server key non-empty and not 'off'); false or absent is no
+     * constraint. Without $routeRequest, the request is built with RouteRequest::fromServer()
+     * when the first route with a 'method' or 'secure' constraint matches the path, so routes without constraints match without any request; fromServer throws
      * \InvalidArgumentException when the server array has no REQUEST_METHOD (the CLI).
      *
      * @param string       $path
@@ -355,7 +366,7 @@ class Mux implements IteratorAggregate
                     continue;
                 }
 
-                if (isset($route[3]['secure']) && $route[3]['secure'] && $_SERVER['HTTPS']) {
+                if (isset($route[3]['secure']) && $route[3]['secure'] && !self::isHttps($routeRequest ??= RouteRequest::fromServer())) {
                     continue;
                 }
 
@@ -375,7 +386,7 @@ class Mux implements IteratorAggregate
                         continue;
                     }
 
-                    if (isset($route[3]['secure']) && $route[3]['secure'] && $_SERVER['HTTPS']) {
+                    if (isset($route[3]['secure']) && $route[3]['secure'] && !self::isHttps($routeRequest ??= RouteRequest::fromServer())) {
                         continue;
                     }
 

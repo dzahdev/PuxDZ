@@ -78,9 +78,10 @@ final class RequestConstraintTest extends TestCase
     }
 
     /**
+     * Failed before the L3 fix: the condition was inverted and read the server superglobal.
+     *
      * @see PLAN-port-php82.md L3
      */
-    #[Group('known-defect')]
     public function test_dispatch_with_secure_route_rejects_plain_http(): void
     {
         $mux = new Mux();
@@ -90,9 +91,10 @@ final class RequestConstraintTest extends TestCase
     }
 
     /**
+     * Failed before the L3 fix: the condition was inverted and read the server superglobal.
+     *
      * @see PLAN-port-php82.md L3
      */
-    #[Group('known-defect')]
     public function test_dispatch_with_secure_route_accepts_https(): void
     {
         $mux = new Mux();
@@ -101,6 +103,28 @@ final class RequestConstraintTest extends TestCase
         $route = $mux->dispatch('/s', RouteRequest::create('GET', '/s', ['HTTPS' => 'on']));
 
         self::assertSame('/s', $route[1]);
+    }
+
+    /**
+     * @see PLAN-port-php82.md L3
+     */
+    public function test_dispatch_with_secure_route_rejects_https_off(): void
+    {
+        $mux = new Mux();
+        $mux->any('/s', ['PageController', 'page1'], ['secure' => true]);
+
+        self::assertNull($mux->dispatch('/s', RouteRequest::create('GET', '/s', ['HTTPS' => 'off'])));
+    }
+
+    /**
+     * @see PLAN-port-php82.md L3
+     */
+    public function test_dispatch_with_secure_false_accepts_plain_http(): void
+    {
+        $mux = new Mux();
+        $mux->any('/s', ['PageController', 'page1'], ['secure' => false]);
+
+        self::assertSame('/s', $mux->dispatch('/s', RouteRequest::create('GET', '/s', []))[1]);
     }
 
     /**
