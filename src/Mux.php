@@ -396,6 +396,9 @@ final class Mux implements IteratorAggregate
      *
      * @return Route|null the route, a PCRE route with its captures in the option 'vars'; null
      *                    when no route matches
+     *
+     * @throws Exception\PatternSyntax when the expression of a PCRE route fails to match (an
+     *                                  invalid expression from a cache file, the backtrack limit)
      */
     public function match(string $path, ?RouteRequest $routeRequest = null): ?array
     {
@@ -414,8 +417,9 @@ final class Mux implements IteratorAggregate
         foreach ($this->routes as $route) {
             $matches = [];
             if ($route[0]) {
-                // If the route is using pcre pattern marching...
-                if (!preg_match($route[1], $path, $matches)) {
+                // A PCRE failure at match time (for example the backtrack limit) throws
+                // PatternSyntax instead of reading as "no match".
+                if (!Pcre::match($route[1], $path, $matches)) {
                     continue;
                 }
                 $route[3]['vars'] = $matches;
@@ -488,6 +492,7 @@ final class Mux implements IteratorAggregate
      * @return Route|null
      *
      * @throws LogicException when a mount point names a submux id that this Mux does not hold
+     * @throws Exception\PatternSyntax when the expression of a PCRE route fails to match
      */
     public function dispatch(string $path, ?RouteRequest $routeRequest = null): ?array
     {

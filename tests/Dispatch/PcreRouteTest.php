@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pux\Tests\Dispatch;
 
 use PHPUnit\Framework\TestCase;
+use Pux\Exception\PatternSyntax;
 use Pux\Mux;
 
 /**
@@ -63,5 +64,34 @@ final class PcreRouteTest extends TestCase
         $mux->add('/search/:filters', ['ProductController', 'listAction']);
 
         self::assertNull($mux->dispatch('/search/a/b/c'));
+    }
+
+    /**
+     * Failed before the L37 fix: preg_match() returned false on the backtrack limit and the
+     * route was skipped, so dispatch() returned null as for a path that matches no route.
+     * pcre.jit is turned off because the JIT does not apply pcre.backtrack_limit.
+     *
+     * @see PLAN-port-php82.md L37
+     */
+    public function test_dispatch_pcre_route_failing_at_match_time_throws_pattern_syntax(): void
+    {
+        $mux = new Mux();
+        $mux->add('/:id', ['ProductController', 'itemAction'], ['require' => ['id' => '(a+)+$']]);
+        $backtrackLimit = ini_get('pcre.backtrack_limit');
+        $jit = ini_get('pcre.jit');
+        self::assertIsString($backtrackLimit);
+        self::assertIsString($jit);
+        ini_set('pcre.backtrack_limit', '100');
+        ini_set('pcre.jit', '0');
+
+        try {
+            $this->expectException(PatternSyntax::class);
+            $this->expectExceptionMessage('Backtrack limit exhausted');
+
+            $mux->dispatch('/' . str_repeat('a', 30) . 'b');
+        } finally {
+            ini_set('pcre.backtrack_limit', $backtrackLimit);
+            ini_set('pcre.jit', $jit);
+        }
     }
 }
