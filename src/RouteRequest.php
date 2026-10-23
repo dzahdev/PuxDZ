@@ -118,15 +118,28 @@ class RouteRequest implements RouteRequestMatcher
     }
 
     /**
-     * QUERY_STRING is optional in the server array: without it the answer is false.
+     * QUERY_STRING is optional in the server array: without it the answer is false, after the
+     * expression is compiled, so an invalid expression throws PatternSyntax either way.
      */
     public function queryStringMatch($pattern, array &$matches = [])
     {
         if (!isset($this->serverParameters['QUERY_STRING'])) {
-            return false;
+            return self::compiledButAbsent($pattern, $matches);
         }
 
         return Pcre::match($pattern, (string) $this->serverParameters['QUERY_STRING'], $matches);
+    }
+
+    /**
+     * Answer of a regex predicate whose subject is absent from the server array: compiles the
+     * expression (PatternSyntax when it is invalid) and returns false with no captures.
+     */
+    private static function compiledButAbsent($pattern, array &$matches)
+    {
+        Pcre::match($pattern, '');
+        $matches = [];
+
+        return false;
     }
 
     /**
@@ -190,14 +203,17 @@ class RouteRequest implements RouteRequestMatcher
         return str_ends_with($this->path, (string) $suffix);
     }
 
+    /**
+     * HTTP_HOST is optional in the server array: without it the answer is false, after the
+     * expression is compiled, so an invalid expression throws PatternSyntax either way.
+     */
     public function hostMatch($host, array &$matches = [])
     {
         if (isset($this->serverParameters['HTTP_HOST'])) {
             return Pcre::match($host, (string) $this->serverParameters['HTTP_HOST'], $matches);
         }
 
-        // the HTTP HOST is not defined.
-        return false;
+        return self::compiledButAbsent($host, $matches);
     }
 
     public function hostEqual($host)

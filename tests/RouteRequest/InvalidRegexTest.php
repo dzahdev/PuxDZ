@@ -39,4 +39,32 @@ final class InvalidRegexTest extends TestCase
 
         RouteRequest::create('GET', '/', ['QUERY_STRING' => 'page=2'])->queryStringMatch('#page=[#');
     }
+
+    /**
+     * Failed before the L30 fix: without the server key the predicate returned false before it
+     * compiled the expression.
+     *
+     * @see PLAN-port-php82.md L30
+     */
+    public function test_host_match_without_host_and_with_invalid_regex_throws_pattern_syntax(): void
+    {
+        $this->expectException(PatternSyntax::class);
+        $this->expectExceptionMessage('#(api#');
+
+        RouteRequest::create('GET', '/')->hostMatch('#(api#');
+    }
+
+    /**
+     * Failed before the L30 fix: without the server key the predicate returned false before it
+     * compiled the expression.
+     *
+     * @see PLAN-port-php82.md L30
+     */
+    public function test_query_string_match_without_query_string_and_with_invalid_regex_throws_pattern_syntax(): void
+    {
+        $this->expectException(PatternSyntax::class);
+        $this->expectExceptionMessage('#page=[#');
+
+        RouteRequest::create('GET', '/')->queryStringMatch('#page=[#');
+    }
 }
