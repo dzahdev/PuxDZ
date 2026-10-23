@@ -224,8 +224,9 @@ class Mux implements IteratorAggregate
 
     public function add($pattern, $callback, array $options = [])
     {
+        // 'Class::method' and 'Class:method' are stored as [class, method].
         if (is_string($callback) && str_contains($callback, ':')) {
-            $callback = explode(':', $callback);
+            $callback = explode(str_contains($callback, '::') ? '::' : ':', $callback, 2);
         }
 
         // Store the request method constraint as the integer value of its RequestMethod case.
