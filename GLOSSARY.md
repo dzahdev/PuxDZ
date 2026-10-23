@@ -104,22 +104,24 @@ A public controller method whose name ends with `Action`, excluding `runAction` 
 (`ControllerRouteBuilder::parseActionMethods()`). `ControllerRouteBuilder::build()` maps each
 action to a route `[path, actionName, options]`:
 
-- path from the `@Route("...")` docblock annotation when present;
+- path and method from the attribute `#[Pux\Attribute\Route('/path', method: RequestMethod::GET)]`
+  when present (Stage 5); the attribute replaces the docblock annotations of that method;
+- otherwise path from the `@Route("...")` docblock annotation (deprecated since 3.0);
 - otherwise `indexAction` maps to `''`;
 - otherwise `translatePath()`: drop the `Action` suffix, replace each upper-case letter with `/`
   plus its lower-case form, prefix `/` (`pageUpdateAction` -> `/page/update`);
-- the `@Method("GET")` annotation sets `options['method']` through
-  `Mux::convertRequestMethodConstant()`.
+- the attribute `method` or the `@Method("GET")` annotation (deprecated since 3.0) sets
+  `options['method']` to the integer value of the `RequestMethod` case.
 
-Annotations declared on a parent class method apply to an overriding child method that has
-none (`tests/ControllerRouteBuilder/BuildTest.php`,
+Attributes and annotations declared on a parent class method apply to an overriding child
+method that has none (`tests/ControllerRouteBuilder/BuildTest.php`,
 `test_build_child_override_without_annotations_keeps_parent_annotations`, fixture
 `ChildController`).
 
 `RouteExecutor::execute($route)` runs a route callback: a Closure, a function name,
 `[class, method]` (the class is instantiated, with `options['constructor_args']` if present),
-`[object, method]`, or an invokable object (`Mux::add()` turns `'Class:method'` into
-`[class, method]`); a missing class or method, or a callback that is not callable, throws
+`[object, method]`, or an invokable object (`Mux::add()` turns `'Class:method'` and
+`'Class::method'` into `[class, method]`, Stage 5 L35); a missing class or method, or a callback that is not callable, throws
 `Pux\Exception\InvalidCallback`.
 
 **Argument binding** (`ArgumentResolver`, used by `RouteExecutor::execute()`,
@@ -137,6 +139,14 @@ none (`tests/ControllerRouteBuilder/BuildTest.php`,
 
 Arguments are passed as named arguments, so a left-out optional parameter does not shift the
 others (Stage 4b L5, L6, L7; upstream issue #112).
+
+**Scalar conversion** (Stage 5): a value bound in steps 1-3 to a parameter declared with one
+scalar type is converted when nothing is lost: an integer string to `int`, an `int` or a
+numeric string to `float`, an `int` or a `float` to `string`, a boolean word of
+`FILTER_VALIDATE_BOOL` (`1`, `0`, `true`, `false`, `on`, `off`, `yes`, `no`, empty) to `bool`.
+Any other value reaches the action unchanged and PHP throws `TypeError` (the action is called
+in strict types mode), so `/item/2.5` for `int $id` is an error, not a truncation. Constrain
+the variable with `require` (for example `['id' => '\d+']`) to reject such paths at dispatch.
 
 ## Resource
 

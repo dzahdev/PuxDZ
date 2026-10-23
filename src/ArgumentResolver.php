@@ -27,10 +27,11 @@ use ReflectionParameter;
  * The result is keyed by parameter name and is passed as named arguments, so a parameter left
  * out in step 4 does not shift the ones after it.
  *
- * Scalar conversion: route variables are strings and the callers call the action under
- * strict types mode (directly, not through call_user_func_array(), whose callback is called in
- * coercive mode when the name is resolved at run time in a namespace), so a value bound in steps 1-3 to a parameter declared with one scalar type
- * (int, float, string or bool, nullable or not) is converted when the conversion loses nothing:
+ * Scalar conversion: route variables are strings and the callers call the action in strict
+ * types mode (directly, not through call_user_func_array(), whose callback is called in
+ * coercive mode when the name is resolved at run time in a namespace), so a value bound in
+ * steps 1-3 to a parameter declared with one scalar type (int, float, string or bool, nullable
+ * or not) is converted when the conversion loses nothing:
  * an integer string to int, an int or a numeric string to float, an int or a float to string, a
  * boolean word of FILTER_VALIDATE_BOOL ("1", "0", "true", "false", "on", "off", "yes", "no",
  * "") to bool. Any other value is passed unchanged and PHP throws a TypeError for it.
