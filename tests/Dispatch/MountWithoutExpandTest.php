@@ -2,7 +2,6 @@
 
 namespace Pux\Tests\Dispatch;
 
-use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Pux\Mux;
 
@@ -84,9 +83,11 @@ final class MountWithoutExpandTest extends TestCase
     }
 
     /**
+     * Failed before the L13 fix: dispatch() passed only the rest of the path to the submux and
+     * dropped the variables of the mount point.
+     *
      * @see PLAN-port-php82.md L13
      */
-    #[Group('known-defect')]
     public function test_dispatch_with_expand_disabled_and_pcre_mount_point_keeps_mount_variable(): void
     {
         $sub = new Mux();
@@ -99,5 +100,33 @@ final class MountWithoutExpandTest extends TestCase
         self::assertSame('7', $route[3]['vars']['id']);
         self::assertArrayHasKey('user', $route[3]['vars']);
         self::assertSame('bob', $route[3]['vars']['user']);
+    }
+
+    /**
+     * @see PLAN-port-php82.md L13
+     */
+    public function test_dispatch_with_expand_disabled_and_variable_clash_keeps_submux_value(): void
+    {
+        $sub = new Mux();
+        $sub->any('/item/:id', ['ProductController', 'itemAction']);
+        $mux = $this->muxWithoutExpand();
+
+        $mux->mount('/u/:id', $sub);
+
+        self::assertSame('7', $mux->dispatch('/u/bob/item/7')[3]['vars']['id']);
+    }
+
+    /**
+     * @see PLAN-port-php82.md L13
+     */
+    public function test_dispatch_with_expand_disabled_and_pcre_mount_point_gives_variable_to_static_submux_route(): void
+    {
+        $sub = new Mux();
+        $sub->any('/profile', ['ProductController', 'itemAction']);
+        $mux = $this->muxWithoutExpand();
+
+        $mux->mount('/u/:user', $sub);
+
+        self::assertSame(['user' => 'bob'], $mux->dispatch('/u/bob/profile')[3]['vars']);
     }
 }

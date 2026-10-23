@@ -439,8 +439,16 @@ class Mux implements IteratorAggregate
                 if ($route[0]) {
 
                     $matchedString = $route[3]['vars'][0];
+                    $subRoute = $submux->dispatch(substr($path, strlen((string) $matchedString)), $routeRequest);
 
-                    return $submux->dispatch(substr($path, strlen((string) $matchedString)), $routeRequest);
+                    // Named variables of the mount point reach the submux route; on a name
+                    // clash the submux value wins. A static submux route has no 'vars' of its own.
+                    if ($subRoute !== null) {
+                        $mountVariables = array_filter($route[3]['vars'], 'is_string', ARRAY_FILTER_USE_KEY);
+                        $subRoute[3]['vars'] = ($subRoute[3]['vars'] ?? []) + $mountVariables;
+                    }
+
+                    return $subRoute;
 
                 } else {
                     return $submux->dispatch(
