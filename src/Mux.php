@@ -43,8 +43,6 @@ class Mux implements IteratorAggregate
      */
     public $routes = [];
 
-    public $staticRoutes = [];
-
     public $routesById = [];
 
     /**
@@ -541,16 +539,19 @@ class Mux implements IteratorAggregate
         return preg_replace('#\(/?:.+\)|\(|\)|\\\\#', '', $pattern);
     }
 
+    /**
+     * Rebuilds a Mux from the array written by export(). 'routes' is required; 'id' (a Mux gets
+     * an id only when it is mounted or asked for one), 'routesById' and 'submux' are optional.
+     * Other keys (for example 'staticRoutes' and 'expand' of upstream cache files) are ignored.
+     */
     public static function __set_state($array)
     {
         $self = new self();
         $self->routes = $array['routes'];
-        $self->submux = $array['submux'];
-        if (isset($array['routesById'])) {
-            $self->routesById = $array['routesById'];
-        }
+        $self->submux = $array['submux'] ?? [];
+        $self->routesById = $array['routesById'] ?? [];
+        $self->id = $array['id'] ?? null;
 
-        $self->id = $array['id'];
         return $self;
     }
 
