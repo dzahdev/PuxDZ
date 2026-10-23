@@ -34,9 +34,7 @@ try {
     $compiler = new MuxCompiler();
     $compiler->callbackValidation = true;
     $compiler->load(__DIR__ . '/hello_routes.php');
-    if ($compiler->compile($cacheFile) === false) {
-        throw new \RuntimeException("Cannot write the route cache $cacheFile.");
-    }
+    $compiler->compile($cacheFile);
 
     $mux = require $cacheFile;
     if (!$mux instanceof Mux) {

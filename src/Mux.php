@@ -284,18 +284,16 @@ final class Mux implements IteratorAggregate
     /**
      * Writes the routes (sorted first, by default) to $outFile as PHP code that returns this Mux.
      *
-     * @return int|false the result of file_put_contents()
+     * @throws Exception\CacheWriteFailed when the file cannot be written
      */
-    public function compile(string $outFile, bool $sortBeforeCompile = true): int|false
+    public function compile(string $outFile, bool $sortBeforeCompile = true): void
     {
         // compile routes to php file as a cache.
         if ($sortBeforeCompile) {
             $this->sort();
         }
 
-        $code = '<?php return ' . $this->export() . ';';
-
-        return file_put_contents($outFile, $code);
+        CacheFile::write($outFile, '<?php return ' . $this->export() . ';');
     }
 
     public function getSubMux(int $id): ?Mux

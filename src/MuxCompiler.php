@@ -162,15 +162,13 @@ final class MuxCompiler
     /**
      * Compile merged routes to file.
      *
-     * @return int|false the result of file_put_contents()
+     * @throws Exception\CacheWriteFailed when the file cannot be written
      */
-    public function compile(string $outFile): int|false
+    public function compile(string $outFile): void
     {
         // compile routes to php file as a cache.
         $this->mux->sort();
 
-        $code = $this->mux->export();
-
-        return file_put_contents($outFile, '<?php return ' . $code . '; /* version */');
+        CacheFile::write($outFile, '<?php return ' . $this->mux->export() . '; /* version */');
     }
 }

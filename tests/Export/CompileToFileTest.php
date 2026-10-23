@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pux\Tests\Export;
 
 use PHPUnit\Framework\TestCase;
+use Pux\Exception\CacheWriteFailed;
 use Pux\Exception\InvalidCallback;
 use Pux\Mux;
 use Pux\MuxCompiler;
@@ -234,5 +235,50 @@ final class CompileToFileTest extends TestCase
         $compiler->merge($mux);
 
         self::assertSame(2, $compiler->get()->length());
+    }
+
+    private static function pathInMissingDirectory(): string
+    {
+        $directory = sys_get_temp_dir() . '/pux-test-missing-' . bin2hex(random_bytes(8));
+        self::assertDirectoryDoesNotExist($directory);
+
+        return $directory . '/routes.php';
+    }
+
+    /**
+     * Failed before the L36 fix: file_put_contents() into a missing directory emitted a warning
+     * and Mux::compile() returned false.
+     *
+     * @see PLAN-port-php82.md L36
+     */
+    public function test_mux_compile_into_missing_directory_throws_cache_write_failed_naming_file(): void
+    {
+        $mux = new Mux();
+        $mux->add('/product/:id', ['ProductController', 'itemAction']);
+        $file = self::pathInMissingDirectory();
+
+        $this->expectException(CacheWriteFailed::class);
+        $this->expectExceptionMessage($file);
+
+        $mux->compile($file);
+    }
+
+    /**
+     * Failed before the L36 fix: MuxCompiler::compile() returned false with a warning.
+     *
+     * @see PLAN-port-php82.md L36
+     */
+    public function test_compiler_compile_into_missing_directory_throws_cache_write_failed_naming_file(): void
+    {
+        $mux = new Mux();
+        $mux->add('/product', ['ProductController', 'listAction']);
+        $compiler = new MuxCompiler();
+        $compiler->merge($mux);
+        $file = self::pathInMissingDirectory();
+
+        $this->expectException(CacheWriteFailed::class);
+        $this->expectExceptionMessage($file);
+
+        $compiler->compile($file);
     }
 }
