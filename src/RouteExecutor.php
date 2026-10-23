@@ -34,17 +34,9 @@ class RouteExecutor
 
         $rps = $reflectionClass->getMethod($callbackArg[1])->getParameters();
 
-        $variables = $options['vars'] ?? [];
-
-        $arguments = [];
-        foreach ($rps as $rp) {
-            $n = $rp->getName();
-            if (isset( $variables[ $n ] )) {
-                $arguments[] = $variables[ $n ];
-            } elseif (isset($route[3]['default'][ $n ] )
-                            && $default = $route[3]['default'][ $n ]) {
-                $arguments[] = $default;
-            } elseif (! $rp->isOptional() && ! $rp->allowsNull()) {
+        [$arguments, $unbound] = ArgumentResolver::bind($rps, $options['vars'] ?? [], $options['default'] ?? []);
+        foreach ($unbound as $rp) {
+            if (! $rp->isOptional() && ! $rp->allowsNull()) {
                 throw new Exception('parameter is not defined.');
             }
         }

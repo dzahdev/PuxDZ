@@ -2,6 +2,7 @@
 namespace Pux\Controller;
 use ReflectionClass;
 use ReflectionObject;
+use Pux\ArgumentResolver;
 use Pux\Mux;
 use Pux\Handler;
 use Pux\RouteRequest;
@@ -42,19 +43,11 @@ class Controller implements Handler
         $reflectionClass = new ReflectionClass($this);
 
         $rps = $reflectionClass->getMethod($action)->getParameters();
-        $vars = $options['vars'] ?? []
-                ;
 
-        $arguments = [];
-        foreach ($rps as $rp) {
-            $n = $rp->getName();
-            if (isset($vars[ $n ])) {
-                $arguments[] = $vars[ $n ];
-            } else if (isset($this->matchedRoute[3]['default'][ $n ])
-                            && $default = $this->matchedRoute[3]['default'][ $n ]) {
-                $arguments[] = $default;
-            } else if (!$rp->isOptional()) {
-                throw MissingArgument::forParameter($n, static::class . '::' . $action);
+        [$arguments, $unbound] = ArgumentResolver::bind($rps, $options['vars'] ?? [], $options['default'] ?? []);
+        foreach ($unbound as $rp) {
+            if (!$rp->isOptional()) {
+                throw MissingArgument::forParameter($rp->getName(), static::class . '::' . $action);
             }
         }
 
@@ -126,14 +119,8 @@ class Controller implements Handler
         $reflectionObject = new ReflectionObject( $this );
         $reflectionMethod = $reflectionObject->getMethod($method);
 
-        // Map vars to function arguments
-        $parameters = $reflectionMethod->getParameters();
-        $arguments = [];
-        foreach ($parameters as $parameter) {
-            if (isset($vars[$parameter->getName()])) {
-                $arguments[] = $vars[ $parameter->getName() ];
-            }
-        }
+        // Map vars to function arguments by name; a parameter without a var is left out.
+        [$arguments] = ArgumentResolver::bind($reflectionMethod->getParameters(), $vars, []);
 
         return call_user_func_array( [$this, $method] , $arguments );
     }
