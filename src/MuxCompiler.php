@@ -68,13 +68,18 @@ class MuxCompiler
     }
 
     /**
-     * @param string $routeFile routeFile, return the Mux
+     * Requires a route cache file (a PHP file that returns a Mux) and merges its routes.
+     *
+     * @param string $muxFile path of the route cache file
+     *
+     * @return Mux the compiler Mux with the routes of every file loaded so far
      */
     public function load($muxFile)
     {
         $mux = require $muxFile;
+        $this->merge($mux);
 
-        return $this->merge($mux);
+        return $this->mux;
     }
 
     /**

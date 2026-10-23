@@ -98,6 +98,32 @@ final class CompileToFileTest extends TestCase
     }
 
     /**
+     * Failed before the L17 fix: load() returned true (the result of merge()), not the Mux its
+     * docblock named.
+     *
+     * @see PLAN-port-php82.md L17
+     */
+    public function test_compiler_load_returns_merged_mux_dispatching_loaded_and_earlier_routes(): void
+    {
+        $hello = new Mux();
+        $hello->add('/hello/:name', ['FooController', 'index']);
+        $helloFile = $this->tempFile();
+        $hello->compile($helloFile);
+        $bye = new Mux();
+        $bye->add('/bye', ['FooController', 'index']);
+        $byeFile = $this->tempFile();
+        $bye->compile($byeFile);
+
+        $compiler = new MuxCompiler();
+        $compiler->load($helloFile);
+        $merged = $compiler->load($byeFile);
+
+        self::assertInstanceOf(Mux::class, $merged);
+        self::assertSame('/hello/:name', $merged->dispatch('/hello/John')[3]['pattern']);
+        self::assertSame([false, '/bye', ['FooController', 'index'], []], $merged->dispatch('/bye'));
+    }
+
+    /**
      * Failed before the R4 fix with Error 'Class "Pux\Exception" not found' (Exception was not
      * imported in namespace Pux).
      *
