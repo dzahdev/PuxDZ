@@ -3,7 +3,6 @@
 namespace Pux;
 
 use Closure;
-use Exception;
 use Pux\Exception\InvalidCallback;
 use ReflectionFunction;
 
@@ -13,6 +12,8 @@ use ReflectionFunction;
  * The callback is one of: a Closure, the name of a function, [class name, method] (the class
  * is instantiated, with options['constructor_args'] when given), [object, method], or an
  * invokable object. Mux::add() turns a 'Class:method' string into [class name, method].
+ * Arguments are bound by ArgumentResolver (by name, by position, route default, own default;
+ * a required parameter without a value throws MissingArgument).
  */
 class RouteExecutor
 {
@@ -23,12 +24,8 @@ class RouteExecutor
         $callable = self::resolveCallable($callback, $options['constructor_args'] ?? null);
         $parameters = (new ReflectionFunction(Closure::fromCallable($callable)))->getParameters();
 
-        [$arguments, $unbound] = ArgumentResolver::bind($parameters, $options['vars'] ?? [], $options['default'] ?? []);
-        foreach ($unbound as $rp) {
-            if (! $rp->isOptional() && ! $rp->allowsNull()) {
-                throw new Exception('parameter is not defined.');
-            }
-        }
+        is_callable($callable, false, $callableName);
+        $arguments = ArgumentResolver::bind($parameters, $options['vars'] ?? [], $options['default'] ?? [], $callableName);
 
         return $callable(...$arguments);
     }

@@ -21,4 +21,14 @@ class ArgumentBindingController
     {
         return "p1=$param1 p2=$param2";
     }
+
+    public function nameAndPosition($a, $param2)
+    {
+        return "a=$a param2=$param2";
+    }
+
+    public function nullable(?string $value)
+    {
+        return 'value=' . var_export($value, true);
+    }
 }

@@ -4,9 +4,9 @@ namespace Pux\Tests\RouteExecutor;
 
 use CRUDProductController;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Pux\Exception\InvalidCallback;
+use Pux\Exception\MissingArgument;
 use Pux\Mux;
 use Pux\RouteExecutor;
 use Pux\Tests\Fixtures\ArgumentBindingController;
@@ -105,17 +105,64 @@ final class ExecuteTest extends TestCase
     }
 
     /**
-     * Upstream issue #112.
+     * Upstream issue #112. Failed before the L7 fix with ArgumentCountError: binding was by
+     * name only.
      *
      * @see PLAN-port-php82.md L7
      */
-    #[Group('known-defect')]
     public function test_execute_binds_variables_by_position_when_parameter_names_differ(): void
     {
         $mux = new Mux();
         $mux->any('/s/:param1/:param2', [ArgumentBindingController::class, 'two']);
 
         self::assertSame('a=x b=y', self::executeDispatched($mux, '/s/x/y'));
+    }
+
+    /**
+     * Binding by name comes first: $param2 takes its variable by name, $a takes the remaining
+     * named variable param1 by position. Failed before the L7 fix with ArgumentCountError.
+     *
+     * @see PLAN-port-php82.md L7
+     */
+    public function test_execute_binds_variable_left_after_name_binding_to_remaining_parameter(): void
+    {
+        $mux = new Mux();
+        $mux->any('/s/:param1/:param2', [ArgumentBindingController::class, 'nameAndPosition']);
+
+        self::assertSame('a=x param2=y', self::executeDispatched($mux, '/s/x/y'));
+    }
+
+    /**
+     * Failed before the L7 fix with ArgumentCountError.
+     *
+     * @see PLAN-port-php82.md L7
+     */
+    public function test_execute_without_value_for_required_parameter_throws_missing_argument_naming_parameter_and_callback(): void
+    {
+        $mux = new Mux();
+        $mux->any('/s/:param1', [ArgumentBindingController::class, 'two']);
+
+        $this->expectException(MissingArgument::class);
+        $this->expectExceptionMessage(ArgumentBindingController::class . '::two(): no route variable or route default for required parameter $b.');
+
+        self::executeDispatched($mux, '/s/x');
+    }
+
+    /**
+     * A required parameter that allows null is still required: it is not filled with null.
+     * Failed before the L7 fix with ArgumentCountError.
+     *
+     * @see PLAN-port-php82.md L7
+     */
+    public function test_execute_without_value_for_required_nullable_parameter_throws_missing_argument(): void
+    {
+        $mux = new Mux();
+        $mux->any('/n', [ArgumentBindingController::class, 'nullable']);
+
+        $this->expectException(MissingArgument::class);
+        $this->expectExceptionMessage('required parameter $value');
+
+        self::executeDispatched($mux, '/n');
     }
 
     /**

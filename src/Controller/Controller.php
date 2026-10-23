@@ -44,12 +44,7 @@ class Controller implements Handler
 
         $rps = $reflectionClass->getMethod($action)->getParameters();
 
-        [$arguments, $unbound] = ArgumentResolver::bind($rps, $options['vars'] ?? [], $options['default'] ?? []);
-        foreach ($unbound as $rp) {
-            if (!$rp->isOptional()) {
-                throw MissingArgument::forParameter($rp->getName(), static::class . '::' . $action);
-            }
-        }
+        $arguments = ArgumentResolver::bind($rps, $options['vars'] ?? [], $options['default'] ?? [], static::class . '::' . $action);
 
         return call_user_func_array([$this, $action], $arguments);
     }
@@ -106,8 +101,11 @@ class Controller implements Handler
      * Run controller action
      *
      * @param string $action Action name, the action name should not include "Action" as its suffix.
-     * @param array $vars    Action method parameters, which will be applied to the method parameters by their names.
+     * @param array $vars    Action method parameters, bound by name, then by position (ArgumentResolver).
      * @return string        Return execution result in string format.
+     *
+     * @throws InvalidCallback when the controller has no such action method
+     * @throws MissingArgument when a required parameter of the action gets no value
      */
     public function runAction($action, array $vars = [])
     {
@@ -119,8 +117,8 @@ class Controller implements Handler
         $reflectionObject = new ReflectionObject( $this );
         $reflectionMethod = $reflectionObject->getMethod($method);
 
-        // Map vars to function arguments by name; a parameter without a var is left out.
-        [$arguments] = ArgumentResolver::bind($reflectionMethod->getParameters(), $vars, []);
+        // Bind vars to the method parameters by the ArgumentResolver rule (no route defaults).
+        $arguments = ArgumentResolver::bind($reflectionMethod->getParameters(), $vars, [], static::class . '::' . $method);
 
         return call_user_func_array( [$this, $method] , $arguments );
     }

@@ -4,6 +4,7 @@ namespace Pux\Tests\RouteExecutor;
 
 use PHPUnit\Framework\TestCase;
 use Pux\Exception\InvalidCallback;
+use Pux\Exception\MissingArgument;
 use Pux\Tests\Fixtures\GreetingController;
 
 /**
@@ -24,5 +25,33 @@ final class ControllerRunActionTest extends TestCase
         $this->expectExceptionMessage('Method goodbyeAction not found in controller Pux\Tests\Fixtures\GreetingController.');
 
         (new GreetingController())->runAction('goodbye');
+    }
+
+    /**
+     * Failed before the L7 fix with ArgumentCountError.
+     *
+     * @see PLAN-port-php82.md L7
+     */
+    public function test_run_action_without_var_for_required_parameter_throws_missing_argument_naming_it(): void
+    {
+        $this->expectException(MissingArgument::class);
+        $this->expectExceptionMessage(GreetingController::class . '::helloAction(): no route variable or route default for required parameter $name.');
+
+        (new GreetingController())->runAction('hello');
+    }
+
+    /**
+     * Failed before the L7 fix with ArgumentCountError.
+     *
+     * @see PLAN-port-php82.md L7
+     */
+    public function test_run_action_binds_var_by_position_when_parameter_name_differs(): void
+    {
+        self::assertSame('hi Bo', (new GreetingController())->runAction('hello', ['who' => 'Bo']));
+    }
+
+    public function test_run_action_binds_var_by_name(): void
+    {
+        self::assertSame('hi Cy', (new GreetingController())->runAction('hello', ['name' => 'Cy']));
     }
 }

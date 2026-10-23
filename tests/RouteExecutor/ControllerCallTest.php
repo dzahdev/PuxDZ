@@ -30,4 +30,20 @@ final class ControllerCallTest extends TestCase
 
         $controller->call($environment, []);
     }
+
+    /**
+     * Failed before the L7 fix with MissingArgument for $name: binding was by name only.
+     *
+     * @see PLAN-port-php82.md L7
+     */
+    public function test_call_binds_variable_by_position_when_parameter_name_differs(): void
+    {
+        $controller = new GreetingController();
+        $environment = [
+            'pux.controller_action' => 'helloAction',
+            'pux.route' => [true, '/hi/:who', [$controller, 'helloAction'], ['vars' => [0 => '/hi/Ann', 'who' => 'Ann', 1 => 'Ann']]],
+        ];
+
+        self::assertSame('hi Ann', $controller->call($environment, []));
+    }
 }
