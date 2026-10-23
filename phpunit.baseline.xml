@@ -1,13 +1,5 @@
 <?xml version="1.0"?>
 <files version="1">
- <file path="src/Mux.php">
-  <line number="328" hash="34a3e19cedfd591f3f0a1b824149dbe11cd43876">
-   <issue><![CDATA[Pux\Mux::match(): Implicitly marking parameter $routeRequest as nullable is deprecated, the explicit nullable type must be used instead]]></issue>
-  </line>
-  <line number="408" hash="81533173c00520f3462416b53c222c0f9fa0ca08">
-   <issue><![CDATA[Pux\Mux::dispatch(): Implicitly marking parameter $routeRequest as nullable is deprecated, the explicit nullable type must be used instead]]></issue>
-  </line>
- </file>
  <file path="src/MuxBuilder/RESTfulMuxBuilder.php">
   <line number="30" hash="cd6e06ae58eb4de9a176676beec6d2a44884d53d">
    <issue><![CDATA[Pux\MuxBuilder\RESTfulMuxBuilder::__construct(): Implicitly marking parameter $mux as nullable is deprecated, the explicit nullable type must be used instead]]></issue>

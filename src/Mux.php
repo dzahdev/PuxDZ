@@ -318,27 +318,25 @@ class Mux implements IteratorAggregate
         };
     }
 
+    private static function requestMethodOf(RouteRequest $routeRequest)
+    {
+        return self::convertRequestMethodConstant($routeRequest->getRequestMethod());
+    }
+
     /**
      * Find a matched route with the path constraint in the current mux object.
+     *
+     * The request method comes from $routeRequest. Without it, the request is built with
+     * RouteRequest::fromServer() when the first route with a 'method' constraint matches the
+     * path, so routes without constraints match without any request; fromServer throws
+     * \InvalidArgumentException when the server array has no REQUEST_METHOD (the CLI).
      *
      * @param string       $path
      *
      * @return array
      */
-    public function match($path, RouteRequest $routeRequest = null)
+    public function match($path, ?RouteRequest $routeRequest = null)
     {
-        $requestMethod = null;
-
-        if ($routeRequest !== null) {
-
-            $requestMethod = self::convertRequestMethodConstant($routeRequest->getRequestMethod());
-
-        } else if (isset($_SERVER['REQUEST_METHOD'])) {
-
-            $requestMethod = self::convertRequestMethodConstant($_SERVER['REQUEST_METHOD']);
-
-        }
-
         foreach ($this->routes as $route) {
             // If the route is using pcre pattern marching...
             if ($route[0]) {
@@ -349,7 +347,7 @@ class Mux implements IteratorAggregate
                 $route[3]['vars'] = $matches;
 
                 // validate request method
-                if (isset($route[3]['method']) && $route[3]['method'] != $requestMethod) {
+                if (isset($route[3]['method']) && $route[3]['method'] != self::requestMethodOf($routeRequest ??= RouteRequest::fromServer())) {
                     continue;
                 }
 
@@ -369,7 +367,7 @@ class Mux implements IteratorAggregate
                         && strncmp((string) $route[1], $path, strlen((string) $route[1])) === 0
                     ) || $route[1] == $path) {
                     // validate request method
-                    if (isset($route[3]['method']) && $route[3]['method'] != $requestMethod) {
+                    if (isset($route[3]['method']) && $route[3]['method'] != self::requestMethodOf($routeRequest ??= RouteRequest::fromServer())) {
                         continue;
                     }
 
@@ -398,16 +396,17 @@ class Mux implements IteratorAggregate
      * Match route in the current Mux and submuxes recursively.
      *
      * The RouteRequest object is used for serving request method, host name
-     * and other route information.
+     * and other route information; it is passed on to the submux. Without it, a request is
+     * built from the server superglobal only when a route with a constraint matches the path
+     * (see match()).
      *
      * @param string $path
-     * @param Pux\RouteRequest $routeRequest
      *
      * @return array
      */
-    public function dispatch($path, RouteRequest $routeRequest = null)
+    public function dispatch($path, ?RouteRequest $routeRequest = null)
     {
-        if ($route = $this->match($path)) {
+        if ($route = $this->match($path, $routeRequest)) {
             // When the callback is an integer, it's refereing to a submux object.
             if (is_integer($route[2])) {
                 $submux = $this->submux[$route[2]];
@@ -418,11 +417,12 @@ class Mux implements IteratorAggregate
 
                     $matchedString = $route[3]['vars'][0];
 
-                    return $submux->dispatch(substr($path, strlen((string) $matchedString)));
+                    return $submux->dispatch(substr($path, strlen((string) $matchedString)), $routeRequest);
 
                 } else {
                     return $submux->dispatch(
-                        substr($path, strlen((string) $route[1])) ?: ''
+                        substr($path, strlen((string) $route[1])) ?: '',
+                        $routeRequest
                     );
                 }
             }

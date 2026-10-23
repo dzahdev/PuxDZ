@@ -14,9 +14,11 @@ use Pux\RouteRequest;
 final class RequestConstraintTest extends TestCase
 {
     /**
+     * Failed before the L4 fix: dispatch() did not pass the request to match(), which read the
+     * method from the server superglobal.
+     *
      * @see PLAN-port-php82.md L4
      */
-    #[Group('known-defect')]
     public function test_dispatch_request_with_post_method_returns_post_route(): void
     {
         $mux = new Mux();
@@ -28,9 +30,11 @@ final class RequestConstraintTest extends TestCase
     }
 
     /**
+     * Failed before the L4 fix: dispatch() did not pass the request to match(), which read the
+     * method from the server superglobal.
+     *
      * @see PLAN-port-php82.md L4
      */
-    #[Group('known-defect')]
     public function test_dispatch_with_get_request_returns_get_routes(): void
     {
         $mux = new Mux();
@@ -40,6 +44,37 @@ final class RequestConstraintTest extends TestCase
 
         self::assertSame(['NewsController', 'itemAction'], $mux->dispatch('/news_item', $request)[2]);
         self::assertSame(['NewsController', 'listAction'], $mux->dispatch('/news', $request)[2]);
+    }
+
+    /**
+     * Without a RouteRequest argument, dispatch builds one with RouteRequest::fromServer() when
+     * it reaches a route with a request constraint. PHPUnit runs in the CLI, where the server
+     * superglobal has no REQUEST_METHOD, so fromServer throws. Failed before the L4 fix: the
+     * constraint was compared with null and the route was skipped.
+     *
+     * @see PLAN-port-php82.md L4
+     */
+    public function test_dispatch_without_request_to_route_with_method_constraint_outside_web_server_throws(): void
+    {
+        $mux = new Mux();
+        $mux->get('/g', ['PageController', 'page1']);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('REQUEST_METHOD');
+
+        $mux->dispatch('/g');
+    }
+
+    /**
+     * @see PLAN-port-php82.md L4
+     */
+    public function test_dispatch_without_request_to_route_without_constraint_returns_route(): void
+    {
+        $mux = new Mux();
+        $mux->get('/g', ['PageController', 'page1']);
+        $mux->any('/a', ['PageController', 'page2']);
+
+        self::assertSame('/a', $mux->dispatch('/a')[1]);
     }
 
     /**

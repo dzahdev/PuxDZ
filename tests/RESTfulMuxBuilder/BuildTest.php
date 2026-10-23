@@ -65,9 +65,11 @@ final class BuildTest extends TestCase
     }
 
     /**
+     * Failed before the L4 fix: dispatch() did not pass the request to match(), which read the
+     * method from the server superglobal.
+     *
      * @see PLAN-port-php82.md L4
      */
-    #[Group('known-defect')]
     #[DataProvider('resourceRequests')]
     public function test_build_with_restful_controller_selects_action_by_request_method(string $method, string $action): void
     {
