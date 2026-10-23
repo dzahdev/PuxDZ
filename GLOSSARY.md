@@ -44,8 +44,9 @@ A route with element `0 === true`. Element `1` is the compiled regular expressio
 `PatternCompiler::compile()` (`#^...$#xs`) or, for a submux mount point,
 `PatternCompiler::compilePrefix()` (`#^...#xs`, no end anchor). Element `3` holds the compiler
 output merged with the route options: `regex`, `compiled`, `pattern` (the source pattern),
-`tokens`, `variables`. `Mux::match()` accepts it when `preg_match($route[1], $path)` succeeds and
-stores the matches in `$route[3]['vars']`.
+`tokens`, `variables`. `Mux::match()` accepts it when `Pux\Pcre::match($route[1], $path)`
+succeeds and stores the matches in `$route[3]['vars']`; a PCRE failure at match time (an invalid
+expression from a cache file, the backtrack limit) throws `PatternSyntax` (Stage 6 L37).
 
 Pattern syntax handled by `PatternCompiler` (a scanner that tracks parenthesis depth, Stage 4a
 L8, L9): `:name` is a variable, text in parentheses is an optional group (groups may follow one
@@ -229,7 +230,8 @@ without constraints match without any request, and `fromServer()` throws
 PHP code that rebuilds a `Mux`: `Mux::export()` returns code that calls `\Pux\Mux::__set_state()`
 with the keys `id`, `routes`, `routesById` and `submux` (each submux exported the same way, the
 parent link not exported); `Mux::compile($file)` and `MuxCompiler::compile($file)` write
-`<?php return <export>;` to a file. `MuxCompiler::load($file)` requires such a file, merges
+`<?php return <export>;` to a file and throw `Pux\Exception\CacheWriteFailed` when the file
+cannot be written (Stage 6 L36). `MuxCompiler::load($file)` requires such a file, merges
 its routes and returns the merged Mux (Stage 4b L17). With `MuxCompiler::$callbackValidation`,
 `merge()` checks `[class, method]` callbacks with `class_exists` and `method_exists` on the class
 name, without instantiating it (Stage 4b L18). `Mux::__set_state()` requires `routes`; `id`,
