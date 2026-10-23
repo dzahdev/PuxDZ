@@ -76,6 +76,26 @@ final class CreateFromEnvTest extends TestCase
     }
 
     /**
+     * Upstream issue #103: the query string is not part of the path; it is read from
+     * QUERY_STRING through queryStringMatch. Failed before the L32 fix: the path was
+     * "/tools?p=K94rF" (createFromEnv did not strip the query string, fromServer did).
+     *
+     * @see PLAN-port-php82.md L32
+     */
+    public function test_create_from_env_takes_path_of_request_uri_without_query_string(): void
+    {
+        $request = RouteRequest::createFromEnv([
+            'REQUEST_METHOD' => 'GET',
+            'REQUEST_URI' => '/tools?p=K94rF',
+            'QUERY_STRING' => 'p=K94rF',
+        ]);
+
+        self::assertSame('/tools', $request->getPath());
+        self::assertTrue($request->queryStringMatch('#p=(\w+)#', $matches));
+        self::assertSame('K94rF', $matches[1]);
+    }
+
+    /**
      * The former code fell back to the path "/" with the comment "check path or throw
      * exception"; no test specified that fallback.
      */

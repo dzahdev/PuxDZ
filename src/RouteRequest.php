@@ -261,8 +261,10 @@ class RouteRequest implements RouteRequestMatcher
 
     /**
      * Create request object from an environment array: a flat server array, or a globals-shaped
-     * array with the keys _SERVER, _REQUEST, _GET, _POST, _COOKIE and _SESSION. The request
-     * method defaults to GET when REQUEST_METHOD is absent.
+     * array with the keys _SERVER, _REQUEST, _GET, _POST, _COOKIE and _SESSION. The path is
+     * PATH_INFO, else REQUEST_URI without its query string (as in fromServer); the query string
+     * is read from QUERY_STRING by queryStringMatch. The request method defaults to GET when
+     * REQUEST_METHOD is absent.
      *
      * @return RouteRequest
      *
@@ -278,11 +280,11 @@ class RouteRequest implements RouteRequestMatcher
         if (isset($env['PATH_INFO'])) {
             $path = $env['PATH_INFO'];
         } elseif (isset($env['REQUEST_URI'])) {
-            $path = $env['REQUEST_URI'];
+            $path = explode('?', (string) $env['REQUEST_URI'], 2)[0];
         } elseif (isset($env['_SERVER']['PATH_INFO'])) {
             $path = $env['_SERVER']['PATH_INFO'];
         } elseif (isset($env['_SERVER']['REQUEST_URI'])) {
-            $path = $env['_SERVER']['REQUEST_URI'];
+            $path = explode('?', (string) $env['_SERVER']['REQUEST_URI'], 2)[0];
         } else {
             throw new \InvalidArgumentException('The environment has no PATH_INFO or REQUEST_URI, neither at the top level nor in _SERVER.');
         }
