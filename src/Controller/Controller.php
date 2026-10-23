@@ -15,7 +15,7 @@ use ReflectionMethod;
  * Base controller: call() runs the action named by the environment with the variables of the
  * matched route, runAction() and forward() run an action by name.
  *
- * Actions are called directly under strict_types, so their scalar parameters receive the values
+ * Actions are called directly in strict types mode, so their scalar parameters receive the values
  * converted by ArgumentResolver.
  */
 class Controller implements Handler
