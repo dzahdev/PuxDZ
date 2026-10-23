@@ -35,7 +35,8 @@ class RESTfulMuxBuilder
 
 
     /**
-     * Register a RESTful resource into the Mux object.
+     * Register a RESTful resource; build() mounts it. Registering the same resource id again
+     * replaces the earlier resource.
      *
      * @param string $resourceId the RESTful resource ID
      * @param Expandable $expandable a controller object that implements Expandable interface.
@@ -43,16 +44,12 @@ class RESTfulMuxBuilder
     public function addResource($resourceId, Expandable $expandable)
     {
         $this->resources[$resourceId] = $expandable;
-
-        $prefix = $this->options['prefix'];
-        $resourceMux = $expandable->expand();
-        $path = $prefix . '/' . $resourceId;
-        $this->mux->mount($path, $resourceMux);
     }
 
 
     /**
-     * build method returns a Mux object with registered resources.
+     * build method mounts every registered resource at "<prefix>/<resource id>" and returns
+     * the Mux. Each call mounts the resources again, so call it once.
      *
      * @return Pux\Mux
      */

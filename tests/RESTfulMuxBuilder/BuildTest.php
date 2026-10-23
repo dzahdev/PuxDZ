@@ -3,7 +3,6 @@
 namespace Pux\Tests\RESTfulMuxBuilder;
 
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use ProductResourceController;
 use Pux\Mux;
@@ -41,9 +40,11 @@ final class BuildTest extends TestCase
     }
 
     /**
+     * Failed before the L14 fix with 2 routes instead of 1: addResource() mounted the resource
+     * and build() mounted it again.
+     *
      * @see PLAN-port-php82.md L14
      */
-    #[Group('known-defect')]
     public function test_build_after_add_resource_mounts_each_resource_route_once(): void
     {
         $mux = new Mux();
