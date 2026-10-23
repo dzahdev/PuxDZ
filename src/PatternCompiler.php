@@ -17,7 +17,8 @@ use Pux\Exception\PatternSyntax;
  *
  * - ":name" is a variable; the name is one or more of [A-Za-z0-9_]. The character right before
  *   the colon is the variable separator ("/" in "/:id", "-" in "-:month"): it is matched
- *   literally in front of the variable. A colon without a character before it is text.
+ *   literally in front of the variable. A variable at the start of the pattern or of a group, or
+ *   right after another token, has no separator (":id", "(:id)").
  * - "(" ... ")" is an optional group; groups may follow one another and nest.
  * - Anything else is literal text. A colon not followed by a name character is text.
  * - An unclosed "(" or a ")" without its "(" throws PatternSyntax.
@@ -25,7 +26,7 @@ use Pux\Exception\PatternSyntax;
  * The default expression of a variable is a negated character class of the characters next to
  * it: the first character of the text right before it (or its own separator when there is no
  * text), the leading character of the next variable or group on the same level, and the
- * character right after its name.
+ * character right after its name. A variable with none of these (":id" alone) excludes "/".
  * The 'require' option replaces the default expression; the 'default' option makes the trailing
  * variables of a level optional.
  */
@@ -138,6 +139,9 @@ class PatternCompiler
             if ($character !== ':' && self::startsVariable($pattern, $offset + 1)) {
                 $separator = $character;
                 $nameOffset = $offset + 2;
+            } elseif ($character === ':' && self::isNameCharacter($pattern, $offset + 1)) {
+                $separator = '';
+                $nameOffset = $offset + 1;
             } else {
                 $text .= $character;
                 ++$offset;
@@ -252,6 +256,10 @@ class PatternCompiler
 
         if ($node[3] !== null) {
             $excluded[] = $node[3];
+        }
+
+        if ($excluded === []) {
+            $excluded[] = '/';
         }
 
         return sprintf('[^%s]+', preg_quote(implode('', array_unique($excluded)), '#'));

@@ -3,7 +3,6 @@
 namespace Pux\Tests\PatternCompiler;
 
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Pux\Exception\PatternSyntax;
 use Pux\PatternCompiler;
@@ -238,11 +237,28 @@ final class CompileTest extends TestCase
     }
 
     /**
+     * Failed before the L9 fix: a colon without a separator character before it was text.
+     *
      * @see PLAN-port-php82.md L9
      */
-    #[Group('known-defect')]
     public function test_compile_pattern_starting_with_variable_captures_whole_path(): void
     {
         self::assertSame(['id' => '42'], self::match(':id', '42'));
+    }
+
+    /**
+     * @see PLAN-port-php82.md L9
+     */
+    public function test_compile_variable_without_separator_neighbours_excludes_slash(): void
+    {
+        self::assertNull(self::match(':id', '4/2'));
+    }
+
+    /**
+     * @see PLAN-port-php82.md L9
+     */
+    public function test_compile_optional_group_starting_with_variable_captures_it(): void
+    {
+        self::assertSame(['id' => '7', 'format' => 'json'], self::match('/item/:id(:format)', '/item/7json', ['require' => ['id' => '\d+']]));
     }
 }
