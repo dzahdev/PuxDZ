@@ -117,8 +117,15 @@ class RouteRequest implements RouteRequestMatcher
         return false;
     }
 
+    /**
+     * QUERY_STRING is optional in the server array: without it the answer is false.
+     */
     public function queryStringMatch($pattern, array &$matches = [])
     {
+        if (!isset($this->serverParameters['QUERY_STRING'])) {
+            return false;
+        }
+
         return Pcre::match($pattern, (string) $this->serverParameters['QUERY_STRING'], $matches);
     }
 

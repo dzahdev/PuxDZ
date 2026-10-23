@@ -105,6 +105,16 @@ final class MatcherTest extends TestCase
     }
 
     /**
+     * Failed before the L26 fix with the warning "Undefined array key QUERY_STRING".
+     *
+     * @see PLAN-port-php82.md L26
+     */
+    public function test_query_string_match_without_query_string_returns_false(): void
+    {
+        self::assertFalse(RouteRequest::create('GET', '/')->queryStringMatch('#.*#'));
+    }
+
+    /**
      * @see PLAN-port-php82.md L2
      */
     public function test_match_constraints_rejects_alternative_with_one_failing_key(): void
