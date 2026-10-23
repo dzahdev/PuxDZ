@@ -10,7 +10,9 @@ Between Stage 0 and Stage 1 the third-party packages were gone and every call th
 `Pux\RouteRequest` or `Pux\Controller\Controller` failed earlier with a class-not-found error.
 Stage 1 replaced them with `Pux\RouteRequest` without a parent and `Pux\Handler`. The "observed"
 column is the behavior at 30bc692 with the packages present. Closed in Stage 1: L1 (probe A), L2
-(probe G), L12 (probe R).
+(probe G), L12 (probe R). Closed in Stage 4a: L3 (probe D), L4 (probe E and the CLI row below),
+L8 (probe I), L9 (probe N), L10 (probe C), L11 (probe Q), L13 (probe T), L24 (probe J and the
+static route row below).
 
 | Probe | Seam | Input | Observed at 30bc692 | Expected | ID | Test |
 |---|---|---|---|---|---|---|
@@ -40,5 +42,5 @@ column is the behavior at 30bc692 with the packages present. Closed in Stage 1: 
 
 | Seam | Input | Observed at 02a9768, PHP 8.3.22 | Expected | ID |
 |---|---|---|---|---|
-| Url | `add('/foo', ..., ['id' => 'foo'])`, `url('foo')` | warning `Undefined array key "pattern"` (`Mux.php:497`), result `''` | `/foo` | none yet; nearest L24 |
+| Url | `add('/foo', ..., ['id' => 'foo'])`, `url('foo')` | warning `Undefined array key "pattern"` (`Mux.php:497`), result `''` | `/foo` | L24 |
 | Dispatch | any route with a method constraint, `dispatch($path)` in the CLI (no `$_SERVER['REQUEST_METHOD']`) | never matches: the constraint is compared with `null` | depends on the L4 fix: the method comes from the `RouteRequest` | L4 |

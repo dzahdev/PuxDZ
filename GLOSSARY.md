@@ -47,10 +47,14 @@ output merged with the route options: `regex`, `compiled`, `pattern` (the source
 `tokens`, `variables`. `Mux::match()` accepts it when `preg_match($route[1], $path)` succeeds and
 stores the matches in `$route[3]['vars']`.
 
-Pattern syntax handled by `PatternCompiler`: `:name` is a variable, `(...)` is an optional
-group, text between them is literal. Example from the class docblock:
-`/blog/item/:id(.:format)`. A variable's default regex excludes the separator characters around
-it; the `require` option overrides it.
+Pattern syntax handled by `PatternCompiler` (a scanner that tracks parenthesis depth, Stage 4a
+L8, L9): `:name` is a variable, `(...)` is an optional group (groups may follow one another and
+nest), text between them is literal. Example from the class docblock:
+`/blog/item/:id(.:format)`. The character before the colon is the variable separator; a
+variable at the start of the pattern or of a group has none (`:id`, `(:format)`). A variable's
+default regex excludes the separator characters around it (`/` when there are none); the
+`require` option overrides it. An unbalanced parenthesis, or a `require` value that makes the
+expression invalid, throws `Pux\Exception\PatternSyntax`.
 
 ## Mount
 
@@ -61,17 +65,18 @@ prefix `$pattern`. `$target` is resolved to a `Mux` first:
 - a `Closure` - called with a new `Mux`, which it fills (or returns a `Mux` to use instead);
 - another callable - called with a new `Mux`.
 
-The signature accepts only `Mux|Controller`, so the `Closure` and callable branches are
-unreachable (defect R1). `mount()` writes `mount_path` and `mux` (the submux object) into the
-options it propagates. What happens next depends on `Mux::$expand`, see Expand.
+The signature accepts `Mux|Expandable|Closure|callable` (defect R1, closed in Stage 3).
+`mount()` writes `mount_path` into the options it propagates; route options hold no objects
+(Stage 4a L10). What happens next depends on `Mux::$expand`, see Expand.
 
 ## Submux
 
 A `Mux` attached to a parent through `mount()`. `mount()` calls `$submux->setParent($parent)`.
 With `expand = false` the parent stores it in `Mux::$submux[$id]` and adds a route whose
 callback is the integer id; `Mux::dispatch()` then strips the matched prefix from the path and
-calls `$submux->dispatch()` with the remainder. Variables matched by a PCRE mount point are not
-passed to the submux (defect L13).
+calls `$submux->dispatch()` with the remainder and the same `RouteRequest`. The named variables
+matched by a PCRE mount point are added to the `vars` of the submux route; on a name clash the
+submux value wins (Stage 4a L13).
 
 ## Expand (flattening)
 
@@ -133,17 +138,18 @@ Keys of element `3` of a route that the code reads. The `Mux::$routes` docblock 
 
 | Key | Set by | Read by | Meaning |
 |---|---|---|---|
-| `method` | `get()`, `post()` and the other helpers, `@Method` | `Mux::match()` | request method constraint as an integer `REQUEST_METHOD_*` constant; a string is converted by `Mux::convertRequestMethodConstant()` (unknown method -> `0`) |
-| `domain` | caller | `Mux::match()` | host constraint, compared with `$_SERVER['HTTP_HOST']` |
-| `secure` | caller | `Mux::match()` | HTTPS constraint, compared with `$_SERVER['HTTPS']`; the condition is inverted (defect L3) |
+| `method` | `get()`, `post()` and the other helpers, `@Method` | `Mux::match()` | request method constraint, stored as the integer value of a `Pux\RequestMethod` case; `add()` accepts the case, its name in any case or its value, anything else throws `\ValueError`. The deprecated `REQUEST_METHOD_*` constants (`src/constants.php`) hold the same values |
+| `domain` | caller | `Mux::match()` | host constraint, compared with `RouteRequest::hostEqual()` (case-insensitive; no `HTTP_HOST` means no match) |
+| `secure` | caller | `Mux::match()` | `true` requires HTTPS: the `HTTPS` key of the request server array non-empty and not `off`; `false` or absent is no constraint |
 | `require` | caller | `PatternCompiler::compilePattern()` | map variable name -> regex that replaces the default variable regex |
 | `default` | caller | `PatternCompiler`, `RouteExecutor` | map variable name -> default value; trailing variables with a default become optional in the compiled regex; `RouteExecutor` uses the value as an argument fallback (falsy values are dropped, defect L6) |
 | `id` | caller | `Mux::add()`, `Mux::getRoute()`, `Mux::url()` | route name, key in `Mux::$routesById` |
 | `mount_path` | `Mux::mount()` | none in `src/` | the mount pattern the route was attached under |
 
-Keys written during processing: `vars` (regex matches, set by `Mux::match()`), `mux` (submux
-object, set by `Mux::mount()`, breaks `export()`, defect L10), `constructor_args` (read by
-`RouteExecutor::execute()`), and the `PatternCompiler` output keys listed under PCRE route.
+Keys written during processing: `vars` (regex matches, set by `Mux::match()`, plus the named
+variables of a PCRE mount point), `constructor_args` (read by `RouteExecutor::execute()`), and
+the `PatternCompiler` output keys listed under PCRE route. `Mux::mount()` no longer writes `mux`
+(the submux object, removed in Stage 4a L10).
 
 ## Mount point
 
@@ -155,8 +161,10 @@ names: "mount point".
 ## Named route
 
 A route registered with the `id` option. `Mux::getRoute($id)` returns it and `Mux::url($id,
-$params)` builds a path from its source pattern: each `:name` is replaced by `$params['name']`,
-an optional group whose variables are not given is removed.
+$params)` builds a path: a static route returns its path; for a PCRE route each `:name` of the
+source pattern is replaced by `$params['name']` as given (the caller encodes values), an
+optional group whose variables are not given is removed. An unknown id throws
+`\RuntimeException`.
 
 ## Handler
 
@@ -173,10 +181,17 @@ A `Pux\RouteRequest`: request method, path, server parameters, headers and the p
 shape of `$_SERVER` (the superglobal itself only when no array is given), by `createFromEnv`
 from an environment array, or by `create($method, $path, $env)`.
 
+`Mux::dispatch($path, $request)` takes the method, host and HTTPS of every constraint from
+`$request` and passes it on to submuxes. Without `$request`, it calls `RouteRequest::fromServer()`
+only when a route with a `method`, `domain` or `secure` constraint matches the path; routes
+without constraints match without any request, and `fromServer()` throws
+`\InvalidArgumentException` when the server array has no `REQUEST_METHOD` (the CLI).
+
 ## Route cache
 
-PHP code that rebuilds a `Mux`: `Mux::export()` returns `var_export($mux)`, evaluated through
-`Mux::__set_state()`; `Mux::compile($file)` and `MuxCompiler::compile($file)` write
+PHP code that rebuilds a `Mux`: `Mux::export()` returns a `\Pux\Mux::__set_state([...])` call
+with the keys `id`, `routes`, `routesById` and `submux` (each submux exported the same way, the
+parent link not exported); `Mux::compile($file)` and `MuxCompiler::compile($file)` write
 `<?php return <export>;` to a file. `MuxCompiler::load($file)` requires such a file and merges
 its routes. In test names: "round trip" is export followed by `eval`.
 
