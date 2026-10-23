@@ -5,6 +5,7 @@ namespace Pux\Tests\PatternCompiler;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
+use Pux\Exception\PatternSyntax;
 use Pux\PatternCompiler;
 
 /**
@@ -190,21 +191,50 @@ final class CompileTest extends TestCase
     }
 
     /**
+     * Failed before the L8 fix: the greedy group expression of the old tokenizer joined both
+     * groups into one.
+     *
      * @see PLAN-port-php82.md L8
      */
-    #[Group('known-defect')]
     public function test_compile_with_two_optional_groups_matches_both_given(): void
     {
         self::assertSame(['b' => '1', 'd' => '2'], self::match('/a(/:b)/c(/:d)', '/a/1/c/2'));
     }
 
     /**
+     * Failed before the L8 fix: the greedy group expression of the old tokenizer joined both
+     * groups into one.
+     *
      * @see PLAN-port-php82.md L8
      */
-    #[Group('known-defect')]
     public function test_compile_with_two_optional_groups_matches_both_omitted(): void
     {
         self::assertSame([], self::match('/a(/:b)/c(/:d)', '/a/c'));
+    }
+
+    /**
+     * The tokenizer that replaced the greedy group regex tracks parenthesis depth, so an
+     * unbalanced group is a syntax error instead of literal text.
+     *
+     * @see PLAN-port-php82.md L8
+     */
+    public function test_compile_with_unclosed_optional_group_throws_pattern_syntax(): void
+    {
+        $this->expectException(PatternSyntax::class);
+        $this->expectExceptionMessage('/a(/:b');
+
+        PatternCompiler::compile('/a(/:b');
+    }
+
+    /**
+     * @see PLAN-port-php82.md L8
+     */
+    public function test_compile_with_closing_parenthesis_without_group_throws_pattern_syntax(): void
+    {
+        $this->expectException(PatternSyntax::class);
+        $this->expectExceptionMessage('/a/:b)');
+
+        PatternCompiler::compile('/a/:b)');
     }
 
     /**
