@@ -55,6 +55,43 @@ final class BuildTest extends TestCase
     }
 
     /**
+     * Failed before the L33 fix with 2 routes instead of 1: each build() call mounted every
+     * registered resource again.
+     *
+     * @see PLAN-port-php82.md L33
+     */
+    public function test_build_called_twice_returns_same_mux_with_each_resource_route_once(): void
+    {
+        $mux = new Mux();
+        $builder = new RESTfulMuxBuilder($mux, ['prefix' => '/=']);
+        $builder->addResource('product', new PlainResource());
+        $builder->build();
+
+        $again = $builder->build();
+
+        self::assertSame($mux, $again);
+        self::assertSame(1, $again->length());
+    }
+
+    /**
+     * A resource registered after build() would never be mounted: addResource() refuses it.
+     *
+     * @see PLAN-port-php82.md L33
+     */
+    public function test_add_resource_after_build_throws_logic_exception_naming_resource(): void
+    {
+        $mux = new Mux();
+        $builder = new RESTfulMuxBuilder($mux, ['prefix' => '/=']);
+        $builder->addResource('product', new PlainResource());
+        $builder->build();
+
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('order');
+
+        $builder->addResource('order', new PlainResource());
+    }
+
+    /**
      * @return array<string, array{string, string}>
      */
     public static function resourceRequests(): array

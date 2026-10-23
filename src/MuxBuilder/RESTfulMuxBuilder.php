@@ -27,6 +27,11 @@ class RESTfulMuxBuilder
      */
     protected $resources = [];
 
+    /**
+     * @var bool true once build() has mounted the resources
+     */
+    protected $built = false;
+
     public function __construct(Mux & $mux = null, array $options = [])
     {
         $this->mux = $mux ?: new Mux;
@@ -40,27 +45,39 @@ class RESTfulMuxBuilder
      *
      * @param string $resourceId the RESTful resource ID
      * @param Expandable $expandable a controller object that implements Expandable interface.
+     *
+     * @throws \LogicException after build(): the resource would never be mounted
      */
     public function addResource($resourceId, Expandable $expandable)
     {
+        if ($this->built) {
+            throw new \LogicException(sprintf('Resource %s is added after build(); register every resource before build().', $resourceId));
+        }
+
         $this->resources[$resourceId] = $expandable;
     }
 
 
     /**
      * build method mounts every registered resource at "<prefix>/<resource id>" and returns
-     * the Mux. Each call mounts the resources again, so call it once.
+     * the Mux. The resources are mounted by the first call only; a later call returns the same
+     * Mux unchanged.
      *
      * @return Pux\Mux
      */
     public function build()
     {
+        if ($this->built) {
+            return $this->mux;
+        }
+
         $prefix = $this->options['prefix'];
         foreach ($this->resources as $resId => $controller) {
             $resourceMux = $controller->expand();
             $path = $prefix . '/' . $resId;
             $this->mux->mount($path, $resourceMux);
         }
+        $this->built = true;
 
         return $this->mux;
     }
