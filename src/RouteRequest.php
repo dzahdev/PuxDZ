@@ -130,15 +130,15 @@ class RouteRequest implements RouteRequestMatcher
     }
 
     /**
-     * Check if the request host is in the list of host.
-     *
+     * Check if the request host is in the list of host: each entry is compared with hostEqual
+     * (case-insensitive equality, false without HTTP_HOST).
      *
      * @return bool
      */
     public function isOneOfHosts(array $hosts)
     {
         foreach ($hosts as $host) {
-            if ($this->matchHost($host)) {
+            if ($this->hostEqual($host)) {
                 return true;
             }
         }

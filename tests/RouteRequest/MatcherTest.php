@@ -61,6 +61,28 @@ final class MatcherTest extends TestCase
         self::assertFalse($request->hostMatch('#.*#'));
     }
 
+    /**
+     * Failed before the L25 fix with "Call to undefined method matchHost()". The list is compared
+     * by host equality (hostEqual), as its docblock "the request host is in the list" says.
+     *
+     * @see PLAN-port-php82.md L25
+     */
+    public function test_is_one_of_hosts_accepts_listed_host_ignoring_case_and_rejects_others(): void
+    {
+        $request = RouteRequest::create('GET', '/', ['HTTP_HOST' => 'API.example.com']);
+
+        self::assertTrue($request->isOneOfHosts(['www.example.com', 'api.example.com']));
+        self::assertFalse($request->isOneOfHosts(['www.example.com', 'example.com']));
+    }
+
+    /**
+     * @see PLAN-port-php82.md L25
+     */
+    public function test_is_one_of_hosts_without_host_returns_false(): void
+    {
+        self::assertFalse(RouteRequest::create('GET', '/')->isOneOfHosts(['example.com']));
+    }
+
     public function test_port_equal_compares_server_port_as_integer(): void
     {
         $request = RouteRequest::create('GET', '/', ['SERVER_PORT' => '8080']);
