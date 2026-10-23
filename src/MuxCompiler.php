@@ -3,7 +3,6 @@
 namespace Pux;
 
 use Pux\Exception\InvalidCallback;
-use ReflectionClass;
 
 class MuxCompiler
 {
@@ -101,39 +100,6 @@ class MuxCompiler
 
                 if (!method_exists($class, $method)) {
                     throw InvalidCallback::methodNotFound($class, $method);
-                }
-            }
-        }
-    }
-
-    public function compileReflectionParameters()
-    {
-        foreach ($this->mux->routes as $route) {
-            [$class, $method] = $route[2];
-
-            $refClass = new ReflectionClass($class);
-            $refMethod = $refClass->getMethod($method);
-            $refParameters = $refMethod->getParameters();
-
-            // HHVM does not support Reflection currently.
-            if (!defined('HHVM_VERSION')) {
-                // when __reflection is defined, we re-use the reflection info.
-                $route[3]['__reflection'] = [];
-                foreach ($refParameters as $refParameter) {
-                    // ReflectionParameter
-                    $param = ['name' => $refParameter->getName(), 'position' => $refParameter->getPosition()];
-                    if ($refParameter->isDefaultValueAvailable()) {
-                        $param['default'] = $refParameter->getDefaultValue();
-                        if (PHP_VERSION_ID >= 50406 && $refParameter->isDefaultValueConstant()) {
-                            $param['constant'] = $refParameter->getDefaultValueConstantName();
-                        }
-                    }
-
-                    if ($optional = $refParameter->isOptional()) {
-                        $param['optional'] = $optional;
-                    }
-
-                    $route[3]['__reflection']['params'][] = $param;
                 }
             }
         }
