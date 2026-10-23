@@ -22,10 +22,11 @@ class RouteExecutor
         [, , $callback, $options] = $route;
 
         $callable = self::resolveCallable($callback, $options['constructor_args'] ?? null);
-        $parameters = (new ReflectionFunction(Closure::fromCallable($callable)))->getParameters();
+        $function = new ReflectionFunction(Closure::fromCallable($callable));
+        $scope = $function->getClosureScopeClass();
+        $callableName = ($scope !== null ? $scope->getName() . '::' : '') . $function->getName();
 
-        is_callable($callable, false, $callableName);
-        $arguments = ArgumentResolver::bind($parameters, $options['vars'] ?? [], $options['default'] ?? [], $callableName);
+        $arguments = ArgumentResolver::bind($function->getParameters(), $options['vars'] ?? [], $options['default'] ?? [], $callableName);
 
         return $callable(...$arguments);
     }
