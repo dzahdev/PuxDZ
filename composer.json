@@ -1,14 +1,13 @@
 {
     "name": "dzahdev/puxdz",
-    "description": "Fast, dependency-free PHP router",
+    "description": "Dependency-free HTTP request router for PHP 8.2 and later: path patterns, request constraints, controller mounting and a route cache",
     "type": "library",
     "license": "MIT",
     "keywords": [
         "router",
         "routing",
         "http",
-        "dispatcher",
-        "url"
+        "dependency-free"
     ],
     "homepage": "https://github.com/dzahdev/PuxDZ",
     "authors": [
@@ -21,6 +20,10 @@
             "email": "dezahdev@gmail.com"
         }
     ],
+    "support": {
+        "issues": "https://github.com/dzahdev/PuxDZ/issues",
+        "source": "https://github.com/dzahdev/PuxDZ"
+    },
     "require": {
         "php": "^8.2",
         "ext-pcre": "*"
@@ -70,9 +73,11 @@
         ],
         "cs": "php-cs-fixer check --diff",
         "cs:fix": "php-cs-fixer fix",
+        "readme": "@php bin/check-readme-examples",
         "check": [
             "@cs",
             "@stan",
+            "@readme",
             "@test"
         ]
     },
@@ -85,7 +90,8 @@
         "stan": "Run PHPStan on src (phpstan.neon.dist, level 9) and on tests (phpstan-tests.neon.dist, level 5)",
         "cs": "Check coding style with PHP-CS-Fixer, print the diff, change nothing",
         "cs:fix": "Apply PHP-CS-Fixer to the files in .php-cs-fixer.dist.php",
-        "check": "Run cs, stan and test in sequence; stops at the first failure"
+        "readme": "Check that every ```php block of README.md equals the eg/ file named in the marker line above it",
+        "check": "Run cs, stan, readme and test in sequence; stops at the first failure"
     },
     "extra": {
         "branch-alias": {

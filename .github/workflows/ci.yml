@@ -44,5 +44,10 @@ jobs:
         run: composer test
 
       - name: Examples
-        # Runs every eg/*.php with this PHP; fails on a non-zero exit or output on stderr.
+        # Runs every eg/*.php with this PHP; fails on a non-zero exit, output on stderr or
+        # output that differs from eg/<name>.out.
         run: bin/run-examples --native
+
+      - name: README examples
+        # Every ```php block of README.md must equal the eg/ file named above it.
+        run: composer readme
