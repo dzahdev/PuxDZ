@@ -90,6 +90,8 @@ final class CreateFromEnvTest extends TestCase
             'QUERY_STRING' => 'p=K94rF',
         ]);
 
+        $matches = [];
+
         self::assertSame('/tools', $request->getPath());
         self::assertTrue($request->queryStringMatch('#p=(\w+)#', $matches));
         self::assertSame('K94rF', $matches[1]);
