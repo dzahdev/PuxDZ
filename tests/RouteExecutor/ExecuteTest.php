@@ -92,9 +92,10 @@ final class ExecuteTest extends TestCase
     }
 
     /**
+     * Failed before the L6 fix with ArgumentCountError: a default that is falsy ('0') was not bound.
+     *
      * @see PLAN-port-php82.md L6
      */
-    #[Group('known-defect')]
     public function test_execute_uses_falsy_route_default_when_optional_variable_is_absent(): void
     {
         $mux = new Mux();
