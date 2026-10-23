@@ -19,7 +19,7 @@ use Pux\Exception\PatternSyntax;
  *   the colon is the variable separator ("/" in "/:id", "-" in "-:month"): it is matched
  *   literally in front of the variable. A variable at the start of the pattern or of a group, or
  *   right after another token, has no separator (":id", "(:id)").
- * - "(" ... ")" is an optional group; groups may follow one another and nest.
+ * - Text in parentheses is an optional group; groups may follow one another and nest.
  * - Anything else is literal text. A colon not followed by a name character is text.
  * - An unclosed "(" or a ")" without its "(" throws PatternSyntax, and so does a 'require'
  *   expression that makes the compiled expression invalid.

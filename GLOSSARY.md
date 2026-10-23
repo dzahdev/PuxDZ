@@ -48,8 +48,8 @@ output merged with the route options: `regex`, `compiled`, `pattern` (the source
 stores the matches in `$route[3]['vars']`.
 
 Pattern syntax handled by `PatternCompiler` (a scanner that tracks parenthesis depth, Stage 4a
-L8, L9): `:name` is a variable, `(...)` is an optional group (groups may follow one another and
-nest), text between them is literal. Example from the class docblock:
+L8, L9): `:name` is a variable, text in parentheses is an optional group (groups may follow one
+another and nest), text between them is literal. Example from the class docblock:
 `/blog/item/:id(.:format)`. The character before the colon is the variable separator; a
 variable at the start of the pattern or of a group has none (`:id`, `(:format)`). A variable's
 default regex excludes the separator characters around it (`/` when there are none); the
@@ -189,7 +189,7 @@ without constraints match without any request, and `fromServer()` throws
 
 ## Route cache
 
-PHP code that rebuilds a `Mux`: `Mux::export()` returns a `\Pux\Mux::__set_state([...])` call
+PHP code that rebuilds a `Mux`: `Mux::export()` returns code that calls `\Pux\Mux::__set_state()`
 with the keys `id`, `routes`, `routesById` and `submux` (each submux exported the same way, the
 parent link not exported); `Mux::compile($file)` and `MuxCompiler::compile($file)` write
 `<?php return <export>;` to a file. `MuxCompiler::load($file)` requires such a file and merges
