@@ -336,10 +336,12 @@ class Mux implements IteratorAggregate
     /**
      * Find a matched route with the path constraint in the current mux object.
      *
-     * The request method and HTTPS come from $routeRequest. A route with 'secure' => true
-     * requires HTTPS (the HTTPS server key non-empty and not 'off'); false or absent is no
-     * constraint. Without $routeRequest, the request is built with RouteRequest::fromServer()
-     * when the first route with a 'method' or 'secure' constraint matches the path, so routes without constraints match without any request; fromServer throws
+     * The request method, host and HTTPS come from $routeRequest. A 'domain' constraint is
+     * compared with RouteRequest::hostEqual (no HTTP_HOST means no match). A route with
+     * 'secure' => true requires HTTPS (the HTTPS server key non-empty and not 'off'); false or
+     * absent is no constraint. Without $routeRequest, the request is built with
+     * RouteRequest::fromServer() when the first route with a 'method', 'domain' or 'secure'
+     * constraint matches the path, so routes without constraints match without any request; fromServer throws
      * \InvalidArgumentException when the server array has no REQUEST_METHOD (the CLI).
      *
      * @param string       $path
@@ -362,7 +364,7 @@ class Mux implements IteratorAggregate
                     continue;
                 }
 
-                if (isset($route[3]['domain']) && $route[3]['domain'] != $_SERVER['HTTP_HOST']) {
+                if (isset($route[3]['domain']) && !($routeRequest ??= RouteRequest::fromServer())->hostEqual($route[3]['domain'])) {
                     continue;
                 }
 
@@ -382,7 +384,7 @@ class Mux implements IteratorAggregate
                         continue;
                     }
 
-                    if (isset($route[3]['domain']) && $route[3]['domain'] != $_SERVER['HTTP_HOST']) {
+                    if (isset($route[3]['domain']) && !($routeRequest ??= RouteRequest::fromServer())->hostEqual($route[3]['domain'])) {
                         continue;
                     }
 

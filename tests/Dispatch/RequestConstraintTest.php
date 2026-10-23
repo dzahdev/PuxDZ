@@ -2,7 +2,6 @@
 
 namespace Pux\Tests\Dispatch;
 
-use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Pux\Mux;
 use Pux\RouteRequest;
@@ -128,9 +127,10 @@ final class RequestConstraintTest extends TestCase
     }
 
     /**
+     * Failed before the L11 fix: Mux::match compared the domain with the server superglobal.
+     *
      * @see PLAN-port-php82.md L11
      */
-    #[Group('known-defect')]
     public function test_dispatch_with_domain_route_accepts_request_for_that_host(): void
     {
         $mux = new Mux();
@@ -142,9 +142,10 @@ final class RequestConstraintTest extends TestCase
     }
 
     /**
+     * Failed before the L11 fix: Mux::match compared the domain with the server superglobal.
+     *
      * @see PLAN-port-php82.md L11
      */
-    #[Group('known-defect')]
     public function test_dispatch_with_domain_route_rejects_request_for_other_host(): void
     {
         $mux = new Mux();
@@ -154,16 +155,17 @@ final class RequestConstraintTest extends TestCase
     }
 
     /**
-     * Fails today with the warning "Undefined array key HTTP_HOST" (Mux::match reads the server superglobal).
+     * Failed before the L11 fix with the warning "Undefined array key HTTP_HOST" (Mux::match read
+     * the server superglobal). Stage 4a passes a RouteRequest without HTTP_HOST: without a request
+     * argument dispatch builds one with RouteRequest::fromServer(), which throws in the CLI (L4).
      *
      * @see PLAN-port-php82.md L11
      */
-    #[Group('known-defect')]
     public function test_dispatch_with_domain_route_and_no_host_returns_null_without_warning(): void
     {
         $mux = new Mux();
         $mux->any('/d', ['PageController', 'page1'], ['domain' => 'a.com']);
 
-        self::assertNull($mux->dispatch('/d'));
+        self::assertNull($mux->dispatch('/d', RouteRequest::create('GET', '/d', [])));
     }
 }
