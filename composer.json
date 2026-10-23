@@ -64,7 +64,10 @@
             "Composer\\Config::disableProcessTimeout",
             "phpunit-watcher watch"
         ],
-        "stan": "phpstan analyse",
+        "stan": [
+            "phpstan analyse --memory-limit=512M",
+            "phpstan analyse --memory-limit=512M -c phpstan-tests.neon.dist"
+        ],
         "cs": "php-cs-fixer check --diff",
         "cs:fix": "php-cs-fixer fix",
         "check": [
@@ -79,7 +82,7 @@
         "test:all": "Run every test, red ones included: --exclude-group replaces the exclusion list of phpunit.xml.dist with a group no test has",
         "test:unit": "Run the unit test suite; pass a filter after --, e.g. composer test:unit -- --filter MuxTest",
         "test:watch": "Re-run PHPUnit when the content of a .php file in src/ or tests/ changes (CRC32 of the content, not mtime)",
-        "stan": "Run PHPStan with phpstan.neon.dist",
+        "stan": "Run PHPStan on src (phpstan.neon.dist, level 9) and on tests (phpstan-tests.neon.dist, level 5)",
         "cs": "Check coding style with PHP-CS-Fixer, print the diff, change nothing",
         "cs:fix": "Apply PHP-CS-Fixer to the files in .php-cs-fixer.dist.php",
         "check": "Run cs, stan and test in sequence; stops at the first failure"
