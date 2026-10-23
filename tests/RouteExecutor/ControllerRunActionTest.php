@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Pux\Exception\InvalidCallback;
 use Pux\Exception\MissingArgument;
 use Pux\Tests\Fixtures\GreetingController;
+use Pux\Tests\Fixtures\TypedController;
 
 /**
  * Controller::runAction (the target of Controller::forward) calls the <action>Action method of
@@ -53,5 +54,10 @@ final class ControllerRunActionTest extends TestCase
     public function test_run_action_binds_var_by_name(): void
     {
         self::assertSame('hi Cy', (new GreetingController())->runAction('hello', ['name' => 'Cy']));
+    }
+
+    public function test_run_action_converts_integer_var_for_int_parameter(): void
+    {
+        self::assertSame(9, (new TypedController())->runAction('item', ['id' => '9']));
     }
 }

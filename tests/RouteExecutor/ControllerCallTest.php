@@ -4,6 +4,7 @@ namespace Pux\Tests\RouteExecutor;
 
 use PHPUnit\Framework\TestCase;
 use Pux\Tests\Fixtures\GreetingController;
+use Pux\Tests\Fixtures\TypedController;
 
 /**
  * Controller::call binds route variables to action parameters with the same rules as
@@ -45,5 +46,29 @@ final class ControllerCallTest extends TestCase
         ];
 
         self::assertSame('hi Ann', $controller->call($environment, []));
+    }
+
+    public function test_call_converts_integer_route_variable_for_int_parameter(): void
+    {
+        $controller = new TypedController();
+        $environment = [
+            'pux.controller_action' => 'itemAction',
+            'pux.route' => [true, '/item/:id', [$controller, 'itemAction'], ['vars' => [0 => '/item/5', 'id' => '5', 1 => '5']]],
+        ];
+
+        self::assertSame(5, $controller->call($environment, []));
+    }
+
+    public function test_call_with_fractional_route_variable_for_int_parameter_throws_type_error(): void
+    {
+        $controller = new TypedController();
+        $environment = [
+            'pux.controller_action' => 'itemAction',
+            'pux.route' => [true, '/item/:id', [$controller, 'itemAction'], ['vars' => [0 => '/item/2.5', 'id' => '2.5', 1 => '2.5']]],
+        ];
+
+        $this->expectException(\TypeError::class);
+
+        $controller->call($environment, []);
     }
 }

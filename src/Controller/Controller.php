@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Pux\Controller;
 use ReflectionClass;
 use ReflectionObject;
@@ -46,7 +49,7 @@ class Controller implements Handler
 
         $arguments = ArgumentResolver::bind($rps, $options['vars'] ?? [], $options['default'] ?? [], static::class . '::' . $action);
 
-        return call_user_func_array([$this, $action], $arguments);
+        return $this->$action(...$arguments);
     }
 
     protected function context(array & $environment, array $response)
@@ -120,7 +123,7 @@ class Controller implements Handler
         // Bind vars to the method parameters by the ArgumentResolver rule (no route defaults).
         $arguments = ArgumentResolver::bind($reflectionMethod->getParameters(), $vars, [], static::class . '::' . $method);
 
-        return call_user_func_array( [$this, $method] , $arguments );
+        return $this->$method(...$arguments);
     }
 
     /**
