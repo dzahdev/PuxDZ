@@ -679,7 +679,7 @@ The route option `id` (an `int` or a `string`) registers a route by name; `getRo
 returns it or `null`. `url($id, array $params = [])` returns the path of a static route, and for
 a route with variables replaces each `:name` of the pattern with `$params['name']` and drops the
 optional groups whose variables are not given. The values are inserted as given: encode them,
-for example with `rawurlencode()`. An unknown id throws `\RuntimeException`.
+for example with `rawurlencode()`. An unknown id throws `Pux\Exception\RouteNotFound`.
 
 ## Route cache
 
@@ -957,6 +957,7 @@ use Pux\Exception\InvalidCallback;
 use Pux\Exception\MissingArgument;
 use Pux\Exception\PatternSyntax;
 use Pux\Exception\PuxException;
+use Pux\Exception\RouteNotFound;
 use Pux\Mux;
 use Pux\RouteExecutor;
 use Pux\RouteRequest;
@@ -987,6 +988,7 @@ function expectError(string $expected, callable $action): void
         $detail = match (true) {
             $error instanceof PatternSyntax => "pattern {$error->pattern}",
             $error instanceof CacheWriteFailed => 'file ' . basename($error->path),
+            $error instanceof RouteNotFound => "id {$error->id}",
             default => $error->getMessage(),
         };
         $kind = $error instanceof PuxException ? ' (PuxException)' : '';
@@ -1013,6 +1015,7 @@ expectError(
 $greetRoute = [false, '/greet', [GreetController::class, 'greetAction'], []];
 expectError(MissingArgument::class, static fn () => RouteExecutor::execute($greetRoute));
 expectError(CacheWriteFailed::class, static fn () => $mux->compile(__FILE__ . '/routes.php'));
+expectError(RouteNotFound::class, static fn () => $mux->url('missing'));
 expectError(\ValueError::class, static fn () => $mux->any('/x', 'x', ['method' => 'FETCH']));
 expectError(
     \InvalidArgumentException::class,
@@ -1028,6 +1031,7 @@ PatternSyntax (PuxException): pattern /blog/:id
 InvalidCallback (PuxException): Controller NoSuchController does not exist.
 MissingArgument (PuxException): Cannot call Pux\Examples\GreetController::greetAction(): no route variable or route default for required parameter $name.
 CacheWriteFailed (PuxException): file routes.php
+RouteNotFound (PuxException): id missing
 ValueError: "FETCH" is not a request method of Pux\RequestMethod; expected one of GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS.
 InvalidArgumentException: The server array has no REQUEST_METHOD.
 ```
@@ -1041,6 +1045,7 @@ execution errors throw classes that implement the interface `Pux\Exception\PuxEx
 | `InvalidCallback` | `\LogicException` | `RouteExecutor::execute()` gets a callback that is not callable or names a missing class or method; `MuxCompiler` callback validation fails; `Controller::call()`, `runAction()` or `forward()` names a missing action |
 | `MissingArgument` | `\LogicException` | a required parameter of the callback gets no value (see [Argument binding](#argument-binding)) |
 | `CacheWriteFailed` | `\RuntimeException` | `Mux::compile()` or `MuxCompiler::compile()` cannot write the cache file; the property `path` holds the file |
+| `RouteNotFound` | `\RuntimeException` | `url()` gets an id that no route has; the property `id` holds it |
 
 Invalid arguments throw the standard PHP exceptions:
 
@@ -1049,7 +1054,6 @@ Invalid arguments throw the standard PHP exceptions:
 | `\ValueError` | the option `method` is not a `RequestMethod` case, name or value |
 | `\InvalidArgumentException` | `RouteRequest::fromServer()` or `createFromEnv()` gets no method or path; a value of the server array is not a scalar; a route option has the wrong type |
 | `\LogicException` | a mount closure returns a value that is not a `Mux`; `RESTfulMuxBuilder::addResource()` is called after `build()`; a mount point names a submux that the `Mux` does not hold |
-| `\RuntimeException` | `url()` gets an unknown route id |
 | `\UnexpectedValueException` | `MuxCompiler::load()` reads a file that does not return a `Mux` |
 | `\TypeError` | a route value cannot be converted to the parameter type |
 

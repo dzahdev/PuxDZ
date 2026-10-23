@@ -586,14 +586,14 @@ final class Mux implements IteratorAggregate
      * @param int|string                    $id     route id
      * @param array<string, scalar|\Stringable> $params the parameters for an url
      *
-     * @throws \RuntimeException when no route has the id
+     * @throws Exception\RouteNotFound when no route has the id
      */
     public function url(int|string $id, array $params = []): string
     {
         $route = $this->getRoute($id);
 
         if ($route === null) {
-            throw new \RuntimeException('Named route not found for id: ' . $id);
+            throw Exception\RouteNotFound::forId($id);
         }
 
         if (!$route[0]) {

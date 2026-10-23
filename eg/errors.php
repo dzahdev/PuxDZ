@@ -17,6 +17,7 @@ use Pux\Exception\InvalidCallback;
 use Pux\Exception\MissingArgument;
 use Pux\Exception\PatternSyntax;
 use Pux\Exception\PuxException;
+use Pux\Exception\RouteNotFound;
 use Pux\Mux;
 use Pux\RouteExecutor;
 use Pux\RouteRequest;
@@ -47,6 +48,7 @@ function expectError(string $expected, callable $action): void
         $detail = match (true) {
             $error instanceof PatternSyntax => "pattern {$error->pattern}",
             $error instanceof CacheWriteFailed => 'file ' . basename($error->path),
+            $error instanceof RouteNotFound => "id {$error->id}",
             default => $error->getMessage(),
         };
         $kind = $error instanceof PuxException ? ' (PuxException)' : '';
@@ -73,6 +75,7 @@ expectError(
 $greetRoute = [false, '/greet', [GreetController::class, 'greetAction'], []];
 expectError(MissingArgument::class, static fn () => RouteExecutor::execute($greetRoute));
 expectError(CacheWriteFailed::class, static fn () => $mux->compile(__FILE__ . '/routes.php'));
+expectError(RouteNotFound::class, static fn () => $mux->url('missing'));
 expectError(\ValueError::class, static fn () => $mux->any('/x', 'x', ['method' => 'FETCH']));
 expectError(
     \InvalidArgumentException::class,

@@ -197,7 +197,7 @@ A route registered with the `id` option. `Mux::getRoute($id)` returns it and `Mu
 $params)` builds a path: a static route returns its path; for a PCRE route each `:name` of the
 source pattern is replaced by `$params['name']` as given (the caller encodes values), an
 optional group whose variables are not given is removed. An unknown id throws
-`\RuntimeException`.
+`Pux\Exception\RouteNotFound` (a `\RuntimeException`).
 
 ## Handler
 

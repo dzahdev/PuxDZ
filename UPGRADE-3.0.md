@@ -3,7 +3,7 @@
 This file lists every incompatible change between the 2.0.x-dev branch of Pux (package
 `corneltek/pux`, commit 30bc692 of 2023-03-28) and PuxDZ 3.0.0. Each entry gives the behavior
 before, the behavior after and what to change in application code. The IDs in parentheses
-(R1-R6, L1-L39, P1-P6) are the defect IDs listed in [CHANGES.md](CHANGES.md).
+(R1-R6, L1-L40, P1-P6) are the defect IDs listed in [CHANGES.md](CHANGES.md).
 
 Order of work for an upgrade:
 
@@ -169,8 +169,10 @@ Order of work for an upgrade:
 - Before: a static named route produced the warning `Undefined array key "pattern"` and returned
   `''`.
 - After: a static named route returns its path. Parameters are converted to strings and inserted
-  without encoding; an unknown id throws `\RuntimeException` (as before).
-- What to do: encode parameter values with `rawurlencode()` before passing them.
+  without encoding; an unknown id throws `Pux\Exception\RouteNotFound` (L40), which extends
+  `\RuntimeException`, the class thrown before.
+- What to do: encode parameter values with `rawurlencode()` before passing them; a `catch` of
+  `\RuntimeException` around `url()` keeps working, or catch `RouteNotFound`.
 
 **`getIterator()` (P3).**
 - Before: `#[\ReturnTypeWillChange]` without a return type.
@@ -374,6 +376,7 @@ Every exception thrown by Pux for a routing or execution error implements
 | callback with a missing class or method | `ReflectionException` or `\LogicException` | `InvalidCallback` |
 | required parameter without a value | `\Exception` or `ArgumentCountError` | `MissingArgument` |
 | cache file cannot be written | `false` and a warning | `CacheWriteFailed` |
+| `url()` of an unknown route id | `\RuntimeException` | `RouteNotFound` (a `\RuntimeException`) |
 | unknown request method name | `0` | `\ValueError` |
 | request without `REQUEST_METHOD` or path | defaults or warnings | `\InvalidArgumentException` |
 | `MuxCompiler::load()` of a file without a `Mux` | `true` | `\UnexpectedValueException` |

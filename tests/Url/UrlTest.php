@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Pux\Tests\Url;
 
 use PHPUnit\Framework\TestCase;
+use Pux\Exception\PuxException;
+use Pux\Exception\RouteNotFound;
 use Pux\Mux;
 
 /**
@@ -64,6 +66,26 @@ final class UrlTest extends TestCase
         $this->expectExceptionMessage('missing');
 
         (new Mux())->url('missing');
+    }
+
+    /**
+     * The exception is a Pux exception that names the id; it extends \RuntimeException, so
+     * code that caught the 2.x exception keeps working. Failed before the L40 fix: url() threw
+     * a plain \RuntimeException.
+     *
+     * @see PLAN-port-php82.md L40
+     */
+    public function test_url_of_unknown_route_id_throws_route_not_found_with_that_id(): void
+    {
+        try {
+            (new Mux())->url('missing');
+            self::fail('url() of an unknown id returned instead of throwing');
+        } catch (RouteNotFound $e) {
+            self::assertInstanceOf(PuxException::class, $e);
+            self::assertInstanceOf(\RuntimeException::class, $e);
+            self::assertSame('missing', $e->id);
+            self::assertStringContainsString('missing', $e->getMessage());
+        }
     }
 
     /**

@@ -19,7 +19,7 @@ incompatibilities); `#N` is the issue or pull request number in c9s/Pux. L31 was
 - `Pux\Handler`, the interface of `Controller::call()`, in place of `PHPSGI\App`.
 - `RouteRequest::fromServer(?array $server = null)`, the only place that reads `$_SERVER`.
 - Exceptions `Pux\Exception\PuxException` (interface), `PatternSyntax`, `InvalidCallback`,
-  `MissingArgument` and `CacheWriteFailed`.
+  `MissingArgument`, `CacheWriteFailed` and `RouteNotFound`.
 - `README.md` for 3.0, `UPGRADE-3.0.md`, `GLOSSARY.md` and the decision records in `docs/adr/`.
 - A PHPUnit 11 suite at the seams of `docs/adr/0002-tdd-at-seams.md`; it also specifies the
   behavior asked for in #30 (exact static paths), #49 (the route `/`), #64 (static routes
@@ -101,6 +101,8 @@ incompatibilities); `#N` is the issue or pull request number in c9s/Pux. L31 was
   a later group matched, so their route defaults are bound (L38).
 - `RESTfulMuxBuilder::build()` drops a trailing `/` of the prefix, so the default prefix `/`
   mounts resources at `/<id>` instead of `//<id>` (L39).
+- `url()` of an unknown id throws `Pux\Exception\RouteNotFound`, which extends
+  `\RuntimeException`, instead of a plain `\RuntimeException` (L40).
 - `match()` and `dispatch()` declare `?RouteRequest` explicitly; the implicit nullable
   parameter was deprecated in PHP 8.4 (P1).
 - `RESTfulMuxBuilder::__construct(?Mux $mux = null, array $options = [])` has no reference

@@ -4,5 +4,6 @@ PatternSyntax (PuxException): pattern /blog/:id
 InvalidCallback (PuxException): Controller NoSuchController does not exist.
 MissingArgument (PuxException): Cannot call Pux\Examples\GreetController::greetAction(): no route variable or route default for required parameter $name.
 CacheWriteFailed (PuxException): file routes.php
+RouteNotFound (PuxException): id missing
 ValueError: "FETCH" is not a request method of Pux\RequestMethod; expected one of GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS.
 InvalidArgumentException: The server array has no REQUEST_METHOD.
