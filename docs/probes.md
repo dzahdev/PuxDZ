@@ -12,7 +12,8 @@ Stage 1 replaced them with `Pux\RouteRequest` without a parent and `Pux\Handler`
 column is the behavior at 30bc692 with the packages present. Closed in Stage 1: L1 (probe A), L2
 (probe G), L12 (probe R). Closed in Stage 4a: L3 (probe D), L4 (probe E and the CLI row below),
 L8 (probe I), L9 (probe N), L10 (probe C), L11 (probe Q), L13 (probe T), L24 (probe J and the
-static route row below).
+static route row below). Closed in Stage 4b: L5 (probe F), L6 (probe K), L7 (probe M),
+L14 (probe U).
 
 | Probe | Seam | Input | Observed at 30bc692 | Expected | ID | Test |
 |---|---|---|---|---|---|---|

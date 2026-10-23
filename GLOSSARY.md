@@ -54,7 +54,12 @@ another and nest), text between them is literal. Example from the class docblock
 variable at the start of the pattern or of a group has none (`:id`, `(:format)`). A variable's
 default regex excludes the separator characters around it (`/` when there are none); the
 `require` option overrides it. An unbalanced parenthesis, or a `require` value that makes the
-expression invalid, throws `Pux\Exception\PatternSyntax`.
+expression invalid, throws `Pux\Exception\PatternSyntax`. White space in text and separators is
+matched literally (Stage 4b L29; the `x` flag would otherwise drop it). A catch-all variable is
+written with `require`: `/search/:filters` with `['require' => ['filters' => '.+']]` captures
+`a/b/c` (upstream issue #109); `+` after a variable name is literal text. Paths are matched as
+given, so the caller decodes them; the query string is not part of the path (issue #103, see
+Route request).
 
 ## Mount
 
@@ -82,7 +87,7 @@ submux value wins (Stage 4a L13).
 
 Two related operations, both called expand in the code:
 
-1. **Mux expansion**: with `Mux::$expand === true`, `mount()` copies every submux route into the
+1. **Mux expansion**: with `Mux::$expand === true` (the default), `mount()` copies every submux route into the
    parent, prefixing its pattern with the mount pattern. The copy is a PCRE route when either
    the submux route is a PCRE route or the mount pattern contains `:`; its options are
    `array_replace_recursive($mountOptions, $route[3])`. After expansion the parent dispatches
@@ -90,8 +95,8 @@ Two related operations, both called expand in the code:
 2. **Controller expansion**: `Expandable::expand(array $options = [], $dynamic)` turns a
    controller into a `Mux`. `ExpandableController::expand()` adds one route per entry of
    `ControllerRouteBuilder::build($this)` and calls `Mux::sort()`; the callback is
-   `[static::class, $action]`, or `[$this, $action]` when `$dynamic` is true. The interface
-   declares `$dynamic = true`, both implementations default to `false` (defect L19).
+   `[static::class, $action]`, or `[$this, $action]` when `$dynamic` is true. The interface and
+   both implementations default to `$dynamic = false` (Stage 4b L19).
 
 ## Action
 
@@ -111,16 +116,33 @@ none (`tests/ControllerRouteBuilder/BuildTest.php`,
 `test_build_child_override_without_annotations_keeps_parent_annotations`, fixture
 `ChildController`).
 
-`RouteExecutor::execute($route)` runs an action: it instantiates the class named in
-`$callback[0]` (with `options['constructor_args']` if present) and passes arguments matched by
-parameter name from `options['vars']`, then from `options['default']`.
+`RouteExecutor::execute($route)` runs a route callback: a Closure, a function name,
+`[class, method]` (the class is instantiated, with `options['constructor_args']` if present),
+`[object, method]`, or an invokable object (`Mux::add()` turns `'Class:method'` into
+`[class, method]`); a missing class or method, or a callback that is not callable, throws
+`Pux\Exception\InvalidCallback`.
+
+**Argument binding** (`ArgumentResolver`, used by `RouteExecutor::execute()`,
+`Controller::call()` and `Controller::runAction()`), per parameter:
+
+1. the route variable of the same name (`options['vars']`);
+2. else, for the parameters left unbound by step 1 in parameter order, the next named route
+   variable that step 1 did not take (string keys of `vars` in their order; numeric keys are
+   never bound);
+3. else the route default of that name (`options['default']`, falsy values included);
+4. else the parameter's own default value (the argument is left out; a variadic parameter takes
+   nothing);
+5. else `Pux\Exception\MissingArgument` naming the parameter and the callback; a nullable
+   parameter without a default value is required too.
+
+Arguments are passed as named arguments, so a left-out optional parameter does not shift the
+others (Stage 4b L5, L6, L7; upstream issue #112).
 
 ## Resource
 
 A RESTful controller registered under a resource id. `RESTfulMuxBuilder::addResource($id,
-Expandable $controller)` stores the controller and mounts its expansion at
-`$prefix . '/' . $id`; `RESTfulMuxBuilder::build()` mounts every stored resource again
-(defect L14). `RESTfulController::expand()` produces five routes:
+Expandable $controller)` stores the controller; `RESTfulMuxBuilder::build()` mounts the expansion
+of every stored resource once at `$prefix . '/' . $id` and returns the Mux (Stage 4b L14). `RESTfulController::expand()` produces five routes:
 
 | Pattern | Method | Action |
 |---|---|---|
@@ -142,7 +164,7 @@ Keys of element `3` of a route that the code reads. The `Mux::$routes` docblock 
 | `domain` | caller | `Mux::match()` | host constraint, compared with `RouteRequest::hostEqual()` (case-insensitive; no `HTTP_HOST` means no match) |
 | `secure` | caller | `Mux::match()` | `true` requires HTTPS: the `HTTPS` key of the request server array non-empty and not `off`; `false` or absent is no constraint |
 | `require` | caller | `PatternCompiler::compilePattern()` | map variable name -> regex that replaces the default variable regex |
-| `default` | caller | `PatternCompiler`, `RouteExecutor` | map variable name -> default value; trailing variables with a default become optional in the compiled regex; `RouteExecutor` uses the value as an argument fallback (falsy values are dropped, defect L6) |
+| `default` | caller | `PatternCompiler`, `RouteExecutor` | map variable name -> default value; trailing variables with a default become optional in the compiled regex; `RouteExecutor` and `Controller::call()` use the value in step 3 of argument binding (falsy values included) |
 | `id` | caller | `Mux::add()`, `Mux::getRoute()`, `Mux::url()` | route name, key in `Mux::$routesById` |
 | `mount_path` | `Mux::mount()` | none in `src/` | the mount pattern the route was attached under |
 
@@ -179,7 +201,12 @@ A `Pux\RouteRequest`: request method, path, server parameters, headers and the p
 (query, body, cookies, session) that the predicates (`pathMatch`, `hostEqual`,
 `matchConstraints` and others) test. Built by `RouteRequest::fromServer` from an array of the
 shape of `$_SERVER` (the superglobal itself only when no array is given), by `createFromEnv`
-from an environment array, or by `create($method, $path, $env)`.
+from an environment array, or by `create($method, $path, $env)`. Both `fromServer` and
+`createFromEnv` take the path from `PATH_INFO`, else from `REQUEST_URI` without its query string
+(Stage 4b L32); the query string is matched through `queryStringMatch()` on `QUERY_STRING`.
+`hostMatch()` and `queryStringMatch()` compile the expression even when their server key is
+absent (then they return `false`), so an invalid expression always throws `PatternSyntax`
+(Stage 4b L30).
 
 `Mux::dispatch($path, $request)` takes the method, host and HTTPS of every constraint from
 `$request` and passes it on to submuxes. Without `$request`, it calls `RouteRequest::fromServer()`
@@ -192,8 +219,11 @@ without constraints match without any request, and `fromServer()` throws
 PHP code that rebuilds a `Mux`: `Mux::export()` returns code that calls `\Pux\Mux::__set_state()`
 with the keys `id`, `routes`, `routesById` and `submux` (each submux exported the same way, the
 parent link not exported); `Mux::compile($file)` and `MuxCompiler::compile($file)` write
-`<?php return <export>;` to a file. `MuxCompiler::load($file)` requires such a file and merges
-its routes. In test names: "round trip" is export followed by `eval`.
+`<?php return <export>;` to a file. `MuxCompiler::load($file)` requires such a file, merges
+its routes and returns the merged Mux (Stage 4b L17). With `MuxCompiler::$callbackValidation`,
+`merge()` checks `[class, method]` callbacks with `class_exists` and `method_exists` on the class
+name, without instantiating it (Stage 4b L18). `Mux::__set_state()` requires `routes`; `id`,
+`routesById` and `submux` are optional (Stage 4b L21). In test names: "round trip" is export followed by `eval`.
 
 ## Test groups
 
