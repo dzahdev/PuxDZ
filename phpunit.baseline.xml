@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<files version="1">
- <file path="src/MuxBuilder/RESTfulMuxBuilder.php">
-  <line number="30" hash="cd6e06ae58eb4de9a176676beec6d2a44884d53d">
-   <issue><![CDATA[Pux\MuxBuilder\RESTfulMuxBuilder::__construct(): Implicitly marking parameter $mux as nullable is deprecated, the explicit nullable type must be used instead]]></issue>
-  </line>
- </file>
-</files>

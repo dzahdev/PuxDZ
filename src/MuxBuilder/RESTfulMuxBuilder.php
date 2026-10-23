@@ -32,9 +32,9 @@ class RESTfulMuxBuilder
      */
     protected $built = false;
 
-    public function __construct(Mux & $mux = null, array $options = [])
+    public function __construct(?Mux $mux = null, array $options = [])
     {
-        $this->mux = $mux ?: new Mux;
+        $this->mux = $mux ?? new Mux();
         $this->options = array_merge(['prefix' => '/'], $options);
     }
 

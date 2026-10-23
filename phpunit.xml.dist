@@ -27,14 +27,7 @@
         </exclude>
     </groups>
 
-    <!--
-        phpunit.baseline.xml lists exactly one PHP 8.4 compile-time deprecation, registry ID P2
-        (RESTfulMuxBuilder.php:30); P1 (Mux::match, Mux::dispatch) was closed with L4. It fires when
-        the class is first loaded, so it would be attributed to whichever test loads it first.
-        Matching is by file, line, line hash and message: any other deprecation still fails the
-        run. The baseline is deleted in Stage 5 together with the fix of P2.
-    -->
-    <source baseline="phpunit.baseline.xml">
+    <source>
         <include>
             <directory>src</directory>
         </include>
