@@ -11,13 +11,6 @@ use LogicException;
 use IteratorAggregate;
 use ArrayIterator;
 
-define('REQUEST_METHOD_GET', 1);
-define('REQUEST_METHOD_POST', 2);
-define('REQUEST_METHOD_PUT', 3);
-define('REQUEST_METHOD_DELETE', 4);
-define('REQUEST_METHOD_PATCH', 5);
-define('REQUEST_METHOD_HEAD', 6);
-define('REQUEST_METHOD_OPTIONS', 7);
 /**
  * Mux class provides a built-in dispatch method that can dispatch routes,
  * You can define a Dispatcher to customze the dispatch logic on your own.
@@ -185,43 +178,43 @@ class Mux implements IteratorAggregate
 
     public function delete($pattern, $callback, array $options = [])
     {
-        $options['method'] = REQUEST_METHOD_DELETE;
+        $options['method'] = RequestMethod::DELETE->value;
         $this->add($pattern, $callback, $options);
     }
 
     public function put($pattern, $callback, array $options = [])
     {
-        $options['method'] = REQUEST_METHOD_PUT;
+        $options['method'] = RequestMethod::PUT->value;
         $this->add($pattern, $callback, $options);
     }
 
     public function get($pattern, $callback, array $options = [])
     {
-        $options['method'] = REQUEST_METHOD_GET;
+        $options['method'] = RequestMethod::GET->value;
         $this->add($pattern, $callback, $options);
     }
 
     public function post($pattern, $callback, array $options = [])
     {
-        $options['method'] = REQUEST_METHOD_POST;
+        $options['method'] = RequestMethod::POST->value;
         $this->add($pattern, $callback, $options);
     }
 
     public function patch($pattern, $callback, array $options = [])
     {
-        $options['method'] = REQUEST_METHOD_PATCH;
+        $options['method'] = RequestMethod::PATCH->value;
         $this->add($pattern, $callback, $options);
     }
 
     public function head($pattern, $callback, array $options = [])
     {
-        $options['method'] = REQUEST_METHOD_HEAD;
+        $options['method'] = RequestMethod::HEAD->value;
         $this->add($pattern, $callback, $options);
     }
 
     public function options($pattern, $callback, array $options = [])
     {
-        $options['method'] = REQUEST_METHOD_OPTIONS;
+        $options['method'] = RequestMethod::OPTIONS->value;
         $this->add($pattern, $callback, $options);
     }
 
@@ -236,9 +229,9 @@ class Mux implements IteratorAggregate
             $callback = explode(':', $callback);
         }
 
-        // Convert request method constraint to constant if it's passed by string
-        if (isset($options['method']) && is_string($options['method'])) {
-            $options['method'] = self::convertRequestMethodConstant($options['method']);
+        // Store the request method constraint as the integer value of its RequestMethod case.
+        if (isset($options['method'])) {
+            $options['method'] = self::requestMethodValue($options['method']);
         }
 
         // compile place holder to patterns
@@ -304,17 +297,30 @@ class Mux implements IteratorAggregate
         }
     }
 
+    /**
+     * Integer value of the request method named $method, ignoring case.
+     *
+     * @deprecated since 3.0, use RequestMethod::fromName($method)->value
+     *
+     * @throws \ValueError when $method is not the name of a RequestMethod case (2.x returned 0)
+     */
     public static function convertRequestMethodConstant($method)
     {
-        return match (strtoupper((string) $method)) {
-            'POST' => REQUEST_METHOD_POST,
-            'GET' => REQUEST_METHOD_GET,
-            'PUT' => REQUEST_METHOD_PUT,
-            'DELETE' => REQUEST_METHOD_DELETE,
-            'PATCH' => REQUEST_METHOD_PATCH,
-            'HEAD' => REQUEST_METHOD_HEAD,
-            'OPTIONS' => REQUEST_METHOD_OPTIONS,
-            default => 0,
+        return RequestMethod::fromName((string) $method)->value;
+    }
+
+    /**
+     * The 'method' option as stored in a route: the integer value of a RequestMethod case, given
+     * as the case, its name in any case or its value.
+     *
+     * @throws \ValueError for a name or a value that is not a RequestMethod case
+     */
+    private static function requestMethodValue($method)
+    {
+        return match (true) {
+            $method instanceof RequestMethod => $method->value,
+            is_int($method) => RequestMethod::from($method)->value,
+            default => RequestMethod::fromName((string) $method)->value,
         };
     }
 
@@ -328,9 +334,13 @@ class Mux implements IteratorAggregate
         return $https !== '' && strcasecmp($https, 'off') !== 0;
     }
 
+    /**
+     * Integer value of the request method, null for a method that is not a RequestMethod case
+     * (such a request matches no route with a 'method' constraint).
+     */
     private static function requestMethodOf(RouteRequest $routeRequest)
     {
-        return self::convertRequestMethodConstant($routeRequest->getRequestMethod());
+        return RequestMethod::tryFromName($routeRequest->getRequestMethod())?->value;
     }
 
     /**
