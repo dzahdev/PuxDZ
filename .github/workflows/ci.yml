@@ -33,15 +33,16 @@ jobs:
         run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: Coding style
-        # removed in Stage 5: src/ is reformatted only in the module review stage
-        continue-on-error: true
         run: composer cs
 
       - name: Static analysis
-        # removed in Stage 5: PHPStan reports defects that Stages 1-4 fix test-first
-        continue-on-error: true
+        # src at level 9 (phpstan.neon.dist), tests at level 5 (phpstan-tests.neon.dist)
         run: composer stan
 
       - name: Tests
         # Excludes the group known-defect (phpunit.xml.dist); must be green.
         run: composer test
+
+      - name: Examples
+        # Runs every eg/*.php with this PHP; fails on a non-zero exit or output on stderr.
+        run: bin/run-examples --native
