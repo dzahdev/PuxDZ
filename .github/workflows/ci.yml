@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4', '8.5']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Coding style
+        run: composer cs
+
+      - name: Static analysis
+        # src at level 9 (phpstan.neon.dist), tests at level 5 (phpstan-tests.neon.dist)
+        run: composer stan
+
+      - name: Tests
+        # Excludes the group known-defect (phpunit.xml.dist); must be green.
+        run: composer test
+
+      - name: Examples
+        # Runs every eg/*.php with this PHP; fails on a non-zero exit, output on stderr or
+        # output that differs from eg/<name>.out.
+        run: bin/run-examples --native
+
+      - name: README examples
+        # Every ```php block of README.md must equal the eg/ file named above it.
+        run: composer readme

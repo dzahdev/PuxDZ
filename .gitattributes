@@ -1,0 +1,15 @@
+* text=auto eol=lf
+*.png binary
+
+/.github export-ignore
+/bin export-ignore
+/docs export-ignore
+/eg export-ignore
+/tests export-ignore
+/.editorconfig export-ignore
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/.php-cs-fixer.dist.php export-ignore
+/phpstan.neon.dist export-ignore
+/phpstan-tests.neon.dist export-ignore
+/phpunit.xml.dist export-ignore

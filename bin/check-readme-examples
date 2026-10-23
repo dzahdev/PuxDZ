@@ -1,0 +1,93 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/*
+ * Checks that every ```php block of README.md is an exact copy of a file in eg/, which
+ * bin/run-examples executes. Each block must be preceded, on the line right before the fence,
+ * by a marker naming the file:
+ *
+ *     <!-- example: eg/quick_start.php -->
+ *     ```php
+ *     ...content of eg/quick_start.php...
+ *     ```
+ *
+ * Line endings are compared as "\n" on both sides. Exits with 1 and one line per problem when
+ * a block has no marker, names a missing file, differs from the file, or is not closed.
+ *
+ *     bin/check-readme-examples              checks README.md of the project root
+ *     bin/check-readme-examples OTHER.md     checks another Markdown file
+ */
+
+$root = dirname(__DIR__);
+$readmePath = $argv[1] ?? $root . '/README.md';
+
+$readme = file_get_contents($readmePath);
+if ($readme === false) {
+    fwrite(STDERR, "check-readme-examples: cannot read $readmePath\n");
+    exit(1);
+}
+
+$lines = explode("\n", str_replace("\r\n", "\n", $readme));
+$problems = [];
+$checked = 0;
+
+for ($i = 0, $count = count($lines); $i < $count; ++$i) {
+    if ($lines[$i] !== '```php') {
+        continue;
+    }
+
+    $fenceLine = $i + 1;
+    $block = [];
+    for (++$i; $i < $count && $lines[$i] !== '```'; ++$i) {
+        $block[] = $lines[$i];
+    }
+    if ($i >= $count) {
+        $problems[] = "line $fenceLine: the ```php block is not closed";
+        break;
+    }
+
+    $marker = $fenceLine >= 2 ? $lines[$fenceLine - 2] : '';
+    if (preg_match('#^<!-- example: (eg/[A-Za-z0-9_]+\.php) -->$#', $marker, $match) !== 1) {
+        $problems[] = "line $fenceLine: the ```php block has no marker <!-- example: eg/<name>.php --> on the line before it";
+        continue;
+    }
+
+    $examplePath = $root . '/' . $match[1];
+    $example = is_file($examplePath) ? file_get_contents($examplePath) : false;
+    if ($example === false) {
+        $problems[] = "line $fenceLine: cannot read $match[1]";
+        continue;
+    }
+
+    $expected = explode("\n", rtrim(str_replace("\r\n", "\n", $example), "\n"));
+    if ($block !== $expected) {
+        $differs = 0;
+        while (($block[$differs] ?? null) === ($expected[$differs] ?? null)) {
+            ++$differs;
+        }
+        $problems[] = sprintf(
+            'line %d: the block differs from %s at line %d of the file (README: %s, file: %s)',
+            $fenceLine,
+            $match[1],
+            $differs + 1,
+            var_export($block[$differs] ?? null, true),
+            var_export($expected[$differs] ?? null, true),
+        );
+        continue;
+    }
+
+    ++$checked;
+}
+
+if ($checked === 0 && $problems === []) {
+    $problems[] = "$readmePath has no ```php block";
+}
+
+if ($problems !== []) {
+    fwrite(STDERR, implode("\n", $problems) . "\n");
+    exit(1);
+}
+
+echo "check-readme-examples: $checked ```php blocks match their eg/ files\n";

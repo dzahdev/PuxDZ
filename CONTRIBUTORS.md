@@ -1,4 +1,6 @@
-**Maintainer: [@c9s](https://github.com/c9s)**
+**Maintainer of Pux: [@c9s](https://github.com/c9s)**
+
+**Maintainer of PuxDZ: [@dzahdev](https://github.com/dzahdev) (Denis Zakharov)**
 
 # Pux Contributors
 
@@ -8,3 +10,4 @@
 - **[@sjinks](https://github.com/sjinks)**
 - **[@zoowii](https://github.com/zoowii)**
 - **[@caferyukseloglu - MotaWord](https://github.com/caferyukseloglu)**
+- **[@dzahdev - Denis Zakharov](https://github.com/dzahdev)**

@@ -1,40 +1,29 @@
 <?php
 
-// vim:et:sw=4:ts=4:sts=4:
-namespace Pux;
-use Pux\Controller\ExpandableController;
-use Pux\Controller\Controller;
-use Pux\RouteRequest;
-use Pux\Expandable;
-use Closure;
-use LogicException;
-use IteratorAggregate;
-use ArrayIterator;
+declare(strict_types=1);
 
-define('REQUEST_METHOD_GET', 1);
-define('REQUEST_METHOD_POST', 2);
-define('REQUEST_METHOD_PUT', 3);
-define('REQUEST_METHOD_DELETE', 4);
-define('REQUEST_METHOD_PATCH', 5);
-define('REQUEST_METHOD_HEAD', 6);
-define('REQUEST_METHOD_OPTIONS', 7);
+namespace Pux;
+
+use ArrayIterator;
+use Closure;
+use IteratorAggregate;
+use LogicException;
+
 /**
  * Mux class provides a built-in dispatch method that can dispatch routes,
  * You can define a Dispatcher to customze the dispatch logic on your own.
  *
+ * A route is the array [pcre, pattern, callback, options]: pcre is true for a pattern with a
+ * variable, pattern is the path (static route) or the compiled expression (PCRE route).
+ *
+ * @phpstan-type Route array{0: bool, 1: string, 2: mixed, 3: array<string, mixed>}
+ *
+ * @implements IteratorAggregate<int, Route>
  */
-class Mux implements IteratorAggregate
+final class Mux implements IteratorAggregate
 {
-
     /**
-     * @var array contains route array
-     *
-     * the route information is stored in the following format:
-     *
-     * [
-     *    [ pcre (boolean), path (string), callback (callable), options (array) ],
-     *    ....
-     * ]
+     * The routes in the order of add() or of sort().
      *
      * The fields are in public scope because they are needed to be accessed by MuxCompiler.
      *
@@ -47,366 +36,449 @@ class Mux implements IteratorAggregate
      *  - 'requirements'
      *  - 'mount_path': the mounted path.
      *
+     * @var list<Route>
      */
-    public $routes = [];
-
-    public $staticRoutes = [];
-
-    public $routesById = [];
+    public array $routes = [];
 
     /**
-     * @var Mux[id]
+     * @var array<array-key, Route> named routes by the option 'id'
      */
-    public $submux = [];
-
-    public $id;
+    public array $routesById = [];
 
     /**
-     * @var bool expand routes to parent mux.
-     *
-     * When expand is enabled, all mounted Mux will expand the routes to the parent mux.
-     * This improves the dispatch performance when you have a lot of sub mux to dispatch.
-     *
-     * When expand is enabled, the pattern comparison strategy for
-     * strings will match the full string.
-     *
-     * When expand is disabled, the pattern comparison strategy for
-     * strings will match the prefix.
+     * @var array<int, Mux> submux by id; a route whose callback is an integer dispatches to it
      */
-    public $expand = true;
+    public array $submux = [];
+
+    public ?int $id = null;
 
     /**
-     * @param Pux\Mux The parent mux object
+     * @var bool whether mount() copies the submux routes into this Mux; true by default.
+     *
+     * true (the default): mount() copies every submux route into this Mux with the mount
+     * pattern as prefix, and dispatch() matches the full path against each copied route, with
+     * no recursion into the submux.
+     *
+     * false: mount() adds one route for the mount pattern whose callback is the submux id
+     * (the submux is kept in $submux). A static mount pattern matches as a prefix of the path,
+     * a PCRE mount pattern is compiled with PatternCompiler::compilePrefix(); dispatch() then
+     * dispatches the rest of the path in the submux.
+     *
+     * CHANGES.md of 2.0 describes expand as disabled; the code has always defaulted to true.
      */
-    protected $parent;
+    public bool $expand = true;
 
-    public static $id_counter = 0;
+    public static int $id_counter = 0;
 
-    public static function generate_id()
+    public static function generate_id(): int
     {
-        return ++static::$id_counter;
+        return ++self::$id_counter;
     }
 
-    public function getId()
+    public function getId(): int
     {
-        if ($this->id) {
-            return $this->id;
-        }
-
-        return $this->id = self::generate_id();
+        return $this->id ??= self::generate_id();
     }
 
-    public function appendRouteArray(array $route)
+    /**
+     * @param Route $route
+     */
+    public function appendRouteArray(array $route): void
     {
         $this->routes[] = $route;
     }
 
-    public function appendRoute($pattern, $callback, array $options = [])
+    /**
+     * @param array<string, mixed> $options
+     */
+    public function appendRoute(string $pattern, mixed $callback, array $options = []): void
     {
         $this->routes[] = [false, $pattern, $callback, $options];
     }
 
-    public function appendPCRERoute(array $routeArgs, $callback)
+    /**
+     * @param array{compiled: string, ...<string, mixed>} $routeArgs a pattern compiled by PatternCompiler
+     */
+    public function appendPCRERoute(array $routeArgs, mixed $callback): void
     {
-        $this->routes[] = [
-            true,
-            // PCRE
-            $routeArgs['compiled'],
-            $callback,
-            $routeArgs,
-        ];
-    }
-
-
-    public function setParent(Mux $mux)
-    {
-        $this->parent = $mux;
+        $this->routes[] = [true, $routeArgs['compiled'], $callback, $routeArgs];
     }
 
     /**
-     * Mount a Mux or a Controller object on a specific path.
+     * Mount routes on a path. The target is a Mux, an Expandable (for example an
+     * ExpandableController, mounted through expand()), or a builder callable that receives a
+     * new Mux to fill; a Closure builder may instead return the Mux to mount.
      *
-     * @param string         $pattern
+     * @param array<string, mixed> $options
+     *
+     * @throws LogicException when a Closure returns a value that is not a Mux
      */
-    public function mount($pattern, \Pux\Mux|\Pux\Controller\Controller $mux, array $options = [])
+    public function mount(string $pattern, Mux|Expandable|Closure|callable $target, array $options = []): void
     {
         // Save the mount path in options array
         $options['mount_path'] = $pattern;
 
-        if ($mux instanceof Expandable) {
-
-            $mux = $mux->expand($options);
-
-        } else if ($mux instanceof Closure) {
-
+        if ($target instanceof self) {
+            $mux = $target;
+        } elseif ($target instanceof Expandable) {
+            $mux = $target->expand($options);
+        } elseif ($target instanceof Closure) {
             // we pass the newly created Mux object to the builder closure to initialize routes.
-            if ($ret = $mux($mux = new Mux())) {
-                if ($ret instanceof Mux) {
-                    $mux = $ret;
-                } else {
+            $mux = new self();
+            $ret = $target($mux);
+            if ($ret) {
+                if (!$ret instanceof self) {
                     throw new LogicException('Invalid object returned from Closure.');
                 }
+                $mux = $ret;
             }
-        } elseif ((!is_object($mux) || !($mux instanceof self)) && is_callable($mux)) {
-            $mux($mux = new self());
+        } else {
+            $mux = new self();
+            $target($mux);
         }
 
-        // Save the constructed mux object in options array, so we can fetch
-        // the expanded mux object in controller object later.
-        $mux->setParent($this);
-        $options['mux'] = $mux;
-
-
+        // Route options hold no objects (they are exported): the submux is kept in
+        // $this->submux, an expanded controller keeps its own Mux (ExpandableController::getMux()).
         if ($this->expand) {
-            $pcre = str_contains($pattern,':');
+            $pcre = str_contains($pattern, ':');
 
             // rewrite submux routes
             foreach ($mux->routes as $route) {
-                // process for pcre
                 if ($route[0] || $pcre) {
-                    $newPattern = $pattern . ( $route[0] ? $route[3]['pattern'] : $route[1] );
-                    $routeArgs = PatternCompiler::compile($newPattern, 
-                        array_replace_recursive($options, $route[3]) );
-                    $this->appendPCRERoute( $routeArgs, $route[2] );
+                    $newPattern = $pattern . ($route[0] ? self::stringOption($route[3], 'pattern') : $route[1]);
+                    $routeArgs = PatternCompiler::compile($newPattern, array_replace_recursive($options, $route[3]));
+                    $this->appendPCRERoute($routeArgs, $route[2]);
                 } else {
-                    $this->routes[] = [false, $pattern . $route[1], $route[2], isset($route[3]) ? array_replace_recursive($options, $route[3]) : $options];
+                    $this->routes[] = [false, $pattern . $route[1], $route[2], array_replace_recursive($options, $route[3])];
                 }
             }
         } else {
-
             $muxId = $mux->getId();
             $this->add($pattern, $muxId, $options);
-            $this->submux[ $muxId ] = $mux;
-
+            $this->submux[$muxId] = $mux;
         }
     }
 
-    public function delete($pattern, $callback, array $options = [])
+    /**
+     * @param array<string, mixed> $options
+     */
+    public function delete(string $pattern, mixed $callback, array $options = []): void
     {
-        $options['method'] = REQUEST_METHOD_DELETE;
+        $options['method'] = RequestMethod::DELETE->value;
         $this->add($pattern, $callback, $options);
     }
 
-    public function put($pattern, $callback, array $options = [])
+    /**
+     * @param array<string, mixed> $options
+     */
+    public function put(string $pattern, mixed $callback, array $options = []): void
     {
-        $options['method'] = REQUEST_METHOD_PUT;
+        $options['method'] = RequestMethod::PUT->value;
         $this->add($pattern, $callback, $options);
     }
 
-    public function get($pattern, $callback, array $options = [])
+    /**
+     * @param array<string, mixed> $options
+     */
+    public function get(string $pattern, mixed $callback, array $options = []): void
     {
-        $options['method'] = REQUEST_METHOD_GET;
+        $options['method'] = RequestMethod::GET->value;
         $this->add($pattern, $callback, $options);
     }
 
-    public function post($pattern, $callback, array $options = [])
+    /**
+     * @param array<string, mixed> $options
+     */
+    public function post(string $pattern, mixed $callback, array $options = []): void
     {
-        $options['method'] = REQUEST_METHOD_POST;
+        $options['method'] = RequestMethod::POST->value;
         $this->add($pattern, $callback, $options);
     }
 
-    public function patch($pattern, $callback, array $options = [])
+    /**
+     * @param array<string, mixed> $options
+     */
+    public function patch(string $pattern, mixed $callback, array $options = []): void
     {
-        $options['method'] = REQUEST_METHOD_PATCH;
+        $options['method'] = RequestMethod::PATCH->value;
         $this->add($pattern, $callback, $options);
     }
 
-    public function head($pattern, $callback, array $options = [])
+    /**
+     * @param array<string, mixed> $options
+     */
+    public function head(string $pattern, mixed $callback, array $options = []): void
     {
-        $options['method'] = REQUEST_METHOD_HEAD;
+        $options['method'] = RequestMethod::HEAD->value;
         $this->add($pattern, $callback, $options);
     }
 
-    public function options($pattern, $callback, array $options = [])
+    /**
+     * @param array<string, mixed> $options
+     */
+    public function options(string $pattern, mixed $callback, array $options = []): void
     {
-        $options['method'] = REQUEST_METHOD_OPTIONS;
+        $options['method'] = RequestMethod::OPTIONS->value;
         $this->add($pattern, $callback, $options);
     }
 
-    public function any($pattern, $callback, array $options = [])
+    /**
+     * @param array<string, mixed> $options
+     */
+    public function any(string $pattern, mixed $callback, array $options = []): void
     {
         $this->add($pattern, $callback, $options);
     }
 
-    public function add($pattern, $callback, array $options = [])
+    /**
+     * Adds a route and returns it. A pattern with ':' is a PCRE route; an integer callback is
+     * the id of a submux (mount() without expand), whose PCRE pattern is compiled as a prefix.
+     *
+     * @param array<string, mixed> $options
+     *
+     * @return Route
+     *
+     * @throws \ValueError for a 'method' option that is not a RequestMethod case
+     */
+    public function add(string $pattern, mixed $callback, array $options = []): array
     {
+        // 'Class::method' and 'Class:method' are stored as [class, method].
         if (is_string($callback) && str_contains($callback, ':')) {
-            $callback = explode(':', $callback);
+            $callback = explode(str_contains($callback, '::') ? '::' : ':', $callback, 2);
         }
 
-        // Convert request method constraint to constant if it's passed by string
-        if (isset($options['method']) && is_string($options['method'])) {
-            $options['method'] = self::convertRequestMethodConstant($options['method']);
+        // Store the request method constraint as the integer value of its RequestMethod case.
+        if (isset($options['method'])) {
+            $options['method'] = self::requestMethodValue($options['method']);
         }
 
-        // compile place holder to patterns
-        $pcre = str_contains((string) $pattern, ':');
-        if ($pcre) {
-            $routeArgs = is_integer($callback)
+        if (str_contains($pattern, ':')) {
+            $routeArgs = is_int($callback)
                 ? PatternCompiler::compilePrefix($pattern, $options)
-                : PatternCompiler::compile($pattern, $options)
-                ;
-
-            // generate a pcre pattern route
-            $route = [
-                true,
-                // PCRE
-                $routeArgs['compiled'],
-                $callback,
-                $routeArgs,
-            ];
-            if (isset($options['id'])) {
-                $this->routesById[ $options['id'] ] = $route;
-            }
-
-            return $this->routes[] = $route;
+                : PatternCompiler::compile($pattern, $options);
+            $route = [true, $routeArgs['compiled'], $callback, $routeArgs];
         } else {
             $route = [false, $pattern, $callback, $options];
-            if (isset($options['id'])) {
-                $this->routesById[ $options['id'] ] = $route;
-            }
-
-            // generate a simple string route.
-            return $this->routes[] = $route;
         }
+
+        if (isset($options['id'])) {
+            $this->routesById[self::routeId($options['id'])] = $route;
+        }
+
+        return $this->routes[] = $route;
     }
 
-    public function getRoute($id)
+    /**
+     * @return Route|null the route added with the option 'id' => $id; null when there is none
+     */
+    public function getRoute(int|string $id): ?array
     {
-        if (isset($this->routesById[$id])) {
-            return $this->routesById[$id];
-        }
+        return $this->routesById[$id] ?? null;
     }
 
-    public function sort()
+    public function sort(): void
     {
-        usort($this->routes, \Pux\MuxCompiler::sort_routes(...));
+        usort($this->routes, MuxCompiler::sort_routes(...));
     }
 
-    public static function sort_routes($a, $b)
-    {
-        if ($a[0] && $b[0]) {
-            return strlen((string) $a[3]['compiled']) > strlen((string) $b[3]['compiled']);
-        } elseif ($a[0]) {
-            return 1;
-        } elseif ($b[0]) {
-            return -1;
-        }
-
-        if (strlen((string) $a[1]) > strlen((string) $b[1])) {
-            return 1;
-        } elseif (strlen((string) $a[1]) == strlen((string) $b[1])) {
-            return 0;
-        } else {
-            return -1;
-        }
-    }
-
-    public function compile($outFile, $sortBeforeCompile = true)
+    /**
+     * Writes the routes (sorted first, by default) to $outFile as PHP code that returns this Mux.
+     *
+     * @throws Exception\CacheWriteFailed when the file cannot be written
+     */
+    public function compile(string $outFile, bool $sortBeforeCompile = true): void
     {
         // compile routes to php file as a cache.
         if ($sortBeforeCompile) {
             $this->sort();
         }
 
-        $code = '<?php return '.$this->export().';';
-
-        return file_put_contents($outFile, $code);
+        CacheFile::write($outFile, '<?php return ' . $this->export() . ';');
     }
 
-    public function getSubMux($id)
+    public function getSubMux(int $id): ?Mux
     {
-        if (isset($this->submux[ $id ])) {
-            return $this->submux[ $id ];
-        }
+        return $this->submux[$id] ?? null;
     }
 
-    public static function convertRequestMethodConstant($method)
+    /**
+     * Integer value of the request method named $method, ignoring case.
+     *
+     * @deprecated since 3.0, use RequestMethod::fromName($method)->value
+     *
+     * @throws \ValueError when $method is not the name of a RequestMethod case (2.x returned 0)
+     */
+    public static function convertRequestMethodConstant(string $method): int
     {
-        return match (strtoupper((string) $method)) {
-            'POST' => REQUEST_METHOD_POST,
-            'GET' => REQUEST_METHOD_GET,
-            'PUT' => REQUEST_METHOD_PUT,
-            'DELETE' => REQUEST_METHOD_DELETE,
-            'PATCH' => REQUEST_METHOD_PATCH,
-            'HEAD' => REQUEST_METHOD_HEAD,
-            'OPTIONS' => REQUEST_METHOD_OPTIONS,
-            default => 0,
+        return RequestMethod::fromName($method)->value;
+    }
+
+    /**
+     * The 'method' option as stored in a route: the integer value of a RequestMethod case, given
+     * as the case, its name in any case or its value.
+     *
+     * @throws \ValueError for a name or a value that is not a RequestMethod case
+     */
+    private static function requestMethodValue(mixed $method): int
+    {
+        return match (true) {
+            $method instanceof RequestMethod => $method->value,
+            is_int($method) => RequestMethod::from($method)->value,
+            is_string($method) => RequestMethod::fromName($method)->value,
+            default => throw new \ValueError(sprintf('The option method is a %s; a RequestMethod, its name or its value is expected.', get_debug_type($method))),
         };
+    }
+
+    /**
+     * The option 'id' as a key of $routesById.
+     *
+     * @throws \InvalidArgumentException when it is not an integer or a string
+     */
+    private static function routeId(mixed $id): int|string
+    {
+        if (!is_int($id) && !is_string($id)) {
+            throw new \InvalidArgumentException(sprintf('The option id is a %s; an integer or a string is expected.', get_debug_type($id)));
+        }
+
+        return $id;
+    }
+
+    /**
+     * A string option that a route must have, such as 'pattern' of a PCRE route.
+     *
+     * @param array<string, mixed> $options
+     *
+     * @throws LogicException when the option is absent or not a string
+     */
+    private static function stringOption(array $options, string $key): string
+    {
+        $value = $options[$key] ?? null;
+        if (!is_string($value)) {
+            throw new LogicException(sprintf('The route option %s is a %s; a string is expected.', $key, get_debug_type($value)));
+        }
+
+        return $value;
+    }
+
+    /**
+     * HTTPS is optional in the server array: absent, empty or 'off' (IIS) means plain HTTP.
+     */
+    private static function isHttps(RouteRequest $routeRequest): bool
+    {
+        $https = $routeRequest->serverParameters['HTTPS'] ?? '';
+        if (!is_scalar($https)) {
+            throw new \InvalidArgumentException(sprintf('The server parameter HTTPS is a %s; a string is expected.', get_debug_type($https)));
+        }
+        $https = (string) $https;
+
+        return $https !== '' && strcasecmp($https, 'off') !== 0;
+    }
+
+    /**
+     * Integer value of the request method, null for a method that is not a RequestMethod case
+     * (such a request matches no route with a 'method' constraint).
+     */
+    private static function requestMethodOf(RouteRequest $routeRequest): ?int
+    {
+        return RequestMethod::tryFromName($routeRequest->getRequestMethod())?->value;
     }
 
     /**
      * Find a matched route with the path constraint in the current mux object.
      *
-     * @param string       $path
+     * The request method, host and HTTPS come from $routeRequest. A 'domain' constraint is
+     * compared with RouteRequest::hostEqual (no HTTP_HOST means no match). A route with
+     * 'secure' => true requires HTTPS (the HTTPS server key non-empty and not 'off'); false or
+     * absent is no constraint. Without $routeRequest, the request is built with
+     * RouteRequest::fromServer() when the first route with a 'method', 'domain' or 'secure'
+     * constraint matches the path, so routes without constraints match without any request; fromServer throws
+     * \InvalidArgumentException when the server array has no REQUEST_METHOD (the CLI).
      *
-     * @return array
+     * @return Route|null the route, a PCRE route with its captures in the option 'vars'; null
+     *                    when no route matches
+     *
+     * @throws Exception\PatternSyntax when the expression of a PCRE route fails to match (an
+     *                                  invalid expression from a cache file, the backtrack limit)
      */
-    public function match($path, RouteRequest $routeRequest = null)
+    public function match(string $path, ?RouteRequest $routeRequest = null): ?array
     {
-        $requestMethod = null;
+        $found = $this->find($path, $routeRequest);
 
-        if ($routeRequest !== null) {
-
-            $requestMethod = self::convertRequestMethodConstant($routeRequest->getRequestMethod());
-
-        } else if (isset($_SERVER['REQUEST_METHOD'])) {
-
-            $requestMethod = self::convertRequestMethodConstant($_SERVER['REQUEST_METHOD']);
-
-        }
-
-        foreach ($this->routes as $route) {
-            // If the route is using pcre pattern marching...
-            if ($route[0]) {
-                if (!preg_match($route[1], $path, $matches)) {
-                    continue;
-                }
-
-                $route[3]['vars'] = $matches;
-
-                // validate request method
-                if (isset($route[3]['method']) && $route[3]['method'] != $requestMethod) {
-                    continue;
-                }
-
-                if (isset($route[3]['domain']) && $route[3]['domain'] != $_SERVER['HTTP_HOST']) {
-                    continue;
-                }
-
-                if (isset($route[3]['secure']) && $route[3]['secure'] && $_SERVER['HTTPS']) {
-                    continue;
-                }
-
-                return $route;
-            } else {
-                // prefix match is used when expanding is not enabled.
-                if ((
-                        (is_int($route[2]) || $route[2] instanceof self || $route[2] instanceof \PHPSGI\App)
-                        && strncmp((string) $route[1], $path, strlen((string) $route[1])) === 0
-                    ) || $route[1] == $path) {
-                    // validate request method
-                    if (isset($route[3]['method']) && $route[3]['method'] != $requestMethod) {
-                        continue;
-                    }
-
-                    if (isset($route[3]['domain']) && $route[3]['domain'] != $_SERVER['HTTP_HOST']) {
-                        continue;
-                    }
-
-                    if (isset($route[3]['secure']) && $route[3]['secure'] && $_SERVER['HTTPS']) {
-                        continue;
-                    }
-
-                    return $route;
-                }
-
-                continue;
-            }
-        }
+        return $found === null ? null : $found[0];
     }
 
-    public function dispatchRequest(RouteRequest $routeRequest)
+    /**
+     * match() plus the captures of a PCRE route (empty for a static route).
+     *
+     * @return array{Route, array<int|string, string>}|null
+     */
+    private function find(string $path, ?RouteRequest &$routeRequest): ?array
+    {
+        foreach ($this->routes as $route) {
+            $matches = [];
+            if ($route[0]) {
+                // A PCRE failure at match time (for example the backtrack limit) throws
+                // PatternSyntax instead of reading as "no match". A variable of an optional
+                // group that is not in the path is left out of 'vars', so its route default
+                // applies.
+                if (!Pcre::matchParticipating($route[1], $path, $matches)) {
+                    continue;
+                }
+                $route[3]['vars'] = $matches;
+            } elseif (!self::matchesStaticPath($route, $path)) {
+                continue;
+            }
+
+            if (self::meetsConstraints($route[3], $routeRequest)) {
+                return [$route, $matches];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * A static route matches its path exactly; a static mount point (submux id, Mux or Handler
+     * callback) matches the paths that start with it, because expanding is not enabled.
+     *
+     * @param Route $route
+     */
+    private static function matchesStaticPath(array $route, string $path): bool
+    {
+        if (is_int($route[2]) || $route[2] instanceof self || $route[2] instanceof Handler) {
+            return str_starts_with($path, $route[1]);
+        }
+
+        return $route[1] === $path;
+    }
+
+    /**
+     * The 'method', 'domain' and 'secure' constraints of a route; the request is built from the
+     * server superglobal on the first constraint that needs it (see match()).
+     *
+     * @param array<string, mixed> $options
+     */
+    private static function meetsConstraints(array $options, ?RouteRequest &$routeRequest): bool
+    {
+        if (isset($options['method']) && $options['method'] != self::requestMethodOf($routeRequest ??= RouteRequest::fromServer())) {
+            return false;
+        }
+
+        if (isset($options['domain']) && !($routeRequest ??= RouteRequest::fromServer())->hostEqual(self::stringOption($options, 'domain'))) {
+            return false;
+        }
+
+        if (isset($options['secure']) && $options['secure'] && !self::isHttps($routeRequest ??= RouteRequest::fromServer())) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @return Route|null
+     */
+    public function dispatchRequest(RouteRequest $routeRequest): ?array
     {
         return $this->dispatch($routeRequest->getPath(), $routeRequest);
     }
@@ -415,108 +487,158 @@ class Mux implements IteratorAggregate
      * Match route in the current Mux and submuxes recursively.
      *
      * The RouteRequest object is used for serving request method, host name
-     * and other route information.
+     * and other route information; it is passed on to the submux. Without it, a request is
+     * built from the server superglobal only when a route with a constraint matches the path
+     * (see match()).
      *
-     * @param string $path
-     * @param Pux\RouteRequest $routeRequest
+     * @return Route|null
      *
-     * @return array
+     * @throws LogicException when a mount point names a submux id that this Mux does not hold
+     * @throws Exception\PatternSyntax when the expression of a PCRE route fails to match
      */
-    public function dispatch($path, RouteRequest $routeRequest = null)
+    public function dispatch(string $path, ?RouteRequest $routeRequest = null): ?array
     {
-        if ($route = $this->match($path)) {
-            // When the callback is an integer, it's refereing to a submux object.
-            if (is_integer($route[2])) {
-                $submux = $this->submux[$route[2]];
+        $found = $this->find($path, $routeRequest);
+        if ($found === null) {
+            return null;
+        }
+        [$route, $matches] = $found;
 
-                // sub-path and call submux to dispatch
-                // for pcre pattern?
-                if ($route[0]) {
-
-                    $matchedString = $route[3]['vars'][0];
-
-                    return $submux->dispatch(substr($path, strlen((string) $matchedString)));
-
-                } else {
-                    return $submux->dispatch(
-                        substr($path, strlen((string) $route[1])) ?: ''
-                    );
-                }
-            }
-
+        // When the callback is an integer, it's refereing to a submux object.
+        if (!is_int($route[2])) {
             return $route;
         }
+
+        $submux = $this->submux[$route[2]] ?? throw new LogicException(sprintf('The mount point %s names submux %d, which this Mux does not hold.', $route[1], $route[2]));
+
+        if (!$route[0]) {
+            return $submux->dispatch(substr($path, strlen($route[1])), $routeRequest);
+        }
+
+        // sub-path and call submux to dispatch
+        $subRoute = $submux->dispatch(substr($path, strlen($matches[0])), $routeRequest);
+
+        // Named variables of the mount point reach the submux route; on a name
+        // clash the submux value wins. A static submux route has no 'vars' of its own.
+        if ($subRoute !== null) {
+            $subVariables = $subRoute[3]['vars'] ?? [];
+            if (!is_array($subVariables)) {
+                throw new LogicException(sprintf('The route option vars is a %s; an array is expected.', get_debug_type($subVariables)));
+            }
+            $subRoute[3]['vars'] = $subVariables + array_filter($matches, is_string(...), ARRAY_FILTER_USE_KEY);
+        }
+
+        return $subRoute;
     }
 
-    public function length()
+    public function length(): int
     {
         return count($this->routes);
     }
 
-    public function getRoutes()
+    /**
+     * @return list<Route>
+     */
+    public function getRoutes(): array
     {
         return $this->routes;
     }
 
-    public function setRoutes(array $routes)
+    /**
+     * @param list<Route> $routes
+     */
+    public function setRoutes(array $routes): void
     {
         $this->routes = $routes;
     }
 
-    public function export()
+    /**
+     * PHP code that rebuilds this Mux through __set_state(): the keys id, routes, routesById and
+     * submux, each submux exported the same way. Routes are exported with var_export, so their
+     * callbacks must be exportable (strings and arrays of strings, not closures).
+     */
+    public function export(): string
     {
-        return var_export($this, true);
+        $submux = '';
+        foreach ($this->submux as $id => $mux) {
+            $submux .= sprintf("    %s => %s,\n", var_export($id, true), $mux->export());
+        }
+
+        return sprintf(
+            "\\%s::__set_state([\n'id' => %s,\n'routes' => %s,\n'routesById' => %s,\n'submux' => [\n%s],\n])",
+            self::class,
+            var_export($this->id, true),
+            var_export($this->routes, true),
+            var_export($this->routesById, true),
+            $submux,
+        );
     }
 
     /**
      * url method generates the related URL for a route.
      *
-     * XXX: Untested
+     * A static route returns its path. A PCRE route replaces each ':name' of its source pattern
+     * with $params['name'] and drops optional groups whose variables are not given. Values are
+     * inserted as given: the caller encodes them (rawurlencode for a path segment).
      *
      * @see https://github.com/c9s/Pux/issues/4
      *
-     * @param string $id     route id
-     * @param array  $params the parameters for an url
+     * @param int|string                    $id     route id
+     * @param array<string, scalar|\Stringable> $params the parameters for an url
      *
-     * @return string
+     * @throws Exception\RouteNotFound when no route has the id
      */
-    public function url($id, array $params = [])
+    public function url(int|string $id, array $params = []): string
     {
         $route = $this->getRoute($id);
 
-        if (!isset($route)) {
-            throw new \RuntimeException('Named route not found for id: '.$id);
+        if ($route === null) {
+            throw Exception\RouteNotFound::forId($id);
+        }
+
+        if (!$route[0]) {
+            return $route[1];
         }
 
         $search = [];
+        $replace = [];
         foreach ($params as $key => $value) {
             // try to match ':{key}' fragments and replace it with value
-            $search[] = '#:'.preg_quote($key, '#').'\+?(?!\w)#';
+            $search[] = '#:' . preg_quote($key, '#') . '\+?(?!\w)#';
+            $replace[] = (string) $value;
         }
 
-        $pattern = preg_replace($search, $params, (string) $route[3]['pattern']);
+        $pattern = preg_replace($search, $replace, self::stringOption($route[3], 'pattern'))
+            ?? throw new \RuntimeException('Cannot insert the parameters into the route pattern: ' . preg_last_error_msg());
 
         // Remove remnants of unpopulated, trailing optional pattern segments, escaped special characters
-        return preg_replace('#\(/?:.+\)|\(|\)|\\\\#', '', $pattern);
+        return preg_replace('#\(/?:.+\)|\(|\)|\\\\#', '', $pattern)
+            ?? throw new \RuntimeException('Cannot remove the optional groups from the route pattern: ' . preg_last_error_msg());
     }
 
-    public static function __set_state($array)
+    /**
+     * Rebuilds a Mux from the array written by export(). 'routes' is required; 'id' (a Mux gets
+     * an id only when it is mounted or asked for one), 'routesById' and 'submux' are optional.
+     * Other keys (for example 'staticRoutes' and 'expand' of upstream cache files) are ignored.
+     *
+     * @param array{routes: list<Route>, id?: int|null, routesById?: array<array-key, Route>, submux?: array<int, Mux>} $array
+     */
+    public static function __set_state(array $array): self
     {
         $self = new self();
         $self->routes = $array['routes'];
-        $self->submux = $array['submux'];
-        if (isset($array['routesById'])) {
-            $self->routesById = $array['routesById'];
-        }
+        $self->submux = $array['submux'] ?? [];
+        $self->routesById = $array['routesById'] ?? [];
+        $self->id = $array['id'] ?? null;
 
-        $self->id = $array['id'];
         return $self;
     }
 
-    #[\ReturnTypeWillChange]
-    public function getIterator()
+    /**
+     * @return ArrayIterator<int, Route>
+     */
+    public function getIterator(): ArrayIterator
     {
         return new ArrayIterator($this->routes);
     }
-
 }

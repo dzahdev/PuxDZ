@@ -1,46 +1,44 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Pux\Controller;
 
-use ReflectionClass;
-use ReflectionMethod;
-use Universal\Http\HttpRequest;
-use Pux\Mux;
-use Pux\Expandable;
 use Pux\Builder\ControllerRouteBuilder;
+use Pux\Expandable;
+use Pux\Mux;
 
+/**
+ * A controller whose *Action methods become routes through expand() (see
+ * ControllerRouteBuilder).
+ */
 class ExpandableController extends Controller implements Expandable
 {
     /**
-     * @var Pux\Mux
+     * The Mux built by the last expand(); null before it.
      */
-    protected $mux;
+    protected ?Mux $mux = null;
 
-
-    public function getMux()
+    public function getMux(): ?Mux
     {
         return $this->mux;
     }
 
-
     /**
      * Expand controller actions to Mux object.
      *
-     * @return Mux
+     * @param array<string, mixed> $options route options merged into every route
      */
-    public function expand(array $options = [], $dynamic = false)
+    public function expand(array $options = [], bool $dynamic = false): Mux
     {
         $this->mux = new Mux();
         $mux = $this->mux;
-        $routes = ControllerRouteBuilder::build($this);
-        foreach ($routes as $route) {
-            if ($dynamic) {
-                $mux->add($route[0], [$this, $route[1]], array_merge($options, $route[2]));
-            } else {
-                $mux->add($route[0], [static::class, $route[1]], array_merge($options, $route[2]));
-            }
+        foreach (ControllerRouteBuilder::build($this) as [$path, $action, $routeOptions]) {
+            $mux->add($path, [$dynamic ? $this : static::class, $action], array_merge($options, $routeOptions));
         }
 
         $mux->sort();
+
         return $mux;
     }
 }

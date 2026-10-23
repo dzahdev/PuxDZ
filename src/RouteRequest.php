@@ -1,8 +1,8 @@
 <?php
 
-namespace Pux;
+declare(strict_types=1);
 
-use Universal\Http\HttpRequest;
+namespace Pux;
 
 /**
  * RouteRequest defines request information for routing.
@@ -10,22 +10,37 @@ use Universal\Http\HttpRequest;
  * You can use RouteRequest's constraint methods to check if a request matches
  * your logics.
  *
+ * The class has no parent: it replaces the former base class HttpRequest of the third-party
+ * package universal/universal and keeps the public property names that class provided. Every
+ * property is readonly: a request is built once, by the constructor or by a factory.
  */
-class RouteRequest extends HttpRequest implements RouteRequestMatcher
+final class RouteRequest implements RouteRequestMatcher
 {
     /**
-     * @var array
+     * @var array<string, mixed> header name (for example "User-Agent") to value, derived from the
+     *                           HTTP_* keys, CONTENT_TYPE and CONTENT_LENGTH of the server parameters
      */
-    protected $headers = [];
+    public readonly array $headers;
 
     /**
-     * @param string $requestMethod
-     * @param string $path
+     * @param array<array-key, mixed> $serverParameters  server parameters, the shape of $_SERVER
+     * @param array<array-key, mixed> $parameters        request parameters, the shape of $_REQUEST
+     * @param array<array-key, mixed> $queryParameters   query string parameters, the shape of $_GET
+     * @param array<array-key, mixed> $bodyParameters    body parameters, the shape of $_POST
+     * @param array<array-key, mixed> $cookieParameters  the shape of $_COOKIE
+     * @param array<array-key, mixed> $sessionParameters the shape of $_SESSION
      */
-    public function __construct(public $requestMethod, public $path)
-    {
-        // Note: It's not neccessary to call parent::__construct because we
-        // don't depend on superglobal variables.
+    public function __construct(
+        public readonly string $requestMethod,
+        public readonly string $path,
+        public readonly array $serverParameters = [],
+        public readonly array $parameters = [],
+        public readonly array $queryParameters = [],
+        public readonly array $bodyParameters = [],
+        public readonly array $cookieParameters = [],
+        public readonly array $sessionParameters = [],
+    ) {
+        $this->headers = self::headersFromServer($serverParameters);
     }
 
     /**
@@ -34,7 +49,7 @@ class RouteRequest extends HttpRequest implements RouteRequestMatcher
      *
      * @return string path
      */
-    public function getPath()
+    public function getPath(): string
     {
         return $this->path ?: '/';
     }
@@ -44,73 +59,91 @@ class RouteRequest extends HttpRequest implements RouteRequestMatcher
      *
      * @return string request method.
      */
-    public function getRequestMethod()
+    public function getRequestMethod(): string
     {
         return $this->requestMethod;
     }
 
     /**
-     * @param contraints[]
+     * True when the request meets every key of at least one alternative.
      *
-     * @return boolean true on match
+     * @param array<array-key, array<string, string>> $constraints list of alternatives; each
+     *        alternative is an array with the optional keys host_match, host, request_method,
+     *        path_match, path
      */
-    public function matchConstraints(array $constraints)
+    public function matchConstraints(array $constraints): bool
     {
         foreach ($constraints as $constraint) {
-            $result = true;
-            if (isset($constraints['host_match'])) {
-                $result = $result && $this->hostMatch($constraints['host_match']);
-            }
-
-            if (isset($constraints['host'])) {
-                $result = $result && $this->hostEqual($constraints['host']);
-            }
-
-            if (isset($constraints['request_method'])) {
-                $result = $result && $this->requestMethodEqual($constraints['request_method']);
-            }
-
-            if (isset($constraints['path_match'])) {
-                $result = $result && $this->pathMatch($constraints['path_match']);
-            }
-
-            if (isset($constraints['path'])) {
-                $result = $result && $this->pathEqual($constraints['path']);
-            }
-
-            // If it matches all constraints, we simply return true and skip other constraints
-            if ($result) {
+            if ((!isset($constraint['host_match']) || $this->hostMatch($constraint['host_match']))
+                && (!isset($constraint['host']) || $this->hostEqual($constraint['host']))
+                && (!isset($constraint['request_method']) || $this->requestMethodEqual($constraint['request_method']))
+                && (!isset($constraint['path_match']) || $this->pathMatch($constraint['path_match']))
+                && (!isset($constraint['path']) || $this->pathEqual($constraint['path']))
+            ) {
                 return true;
             }
-
-            // try next one
         }
 
         return false;
-    }
-
-    public function queryStringMatch($pattern, array &$matches = [])
-    {
-        return preg_match($pattern, (string) $this->serverParameters['QUERY_STRING'], $matches) !== false;
-    }
-
-    public function portEqual($port)
-    {
-        if (isset($this->serverParameters['SERVER_PORT'])) {
-            return intval($this->serverParameters['SERVER_PORT']) == intval($port);
-        }
     }
 
     /**
-     * Check if the request host is in the list of host.
+     * QUERY_STRING is optional in the server array: without it the answer is false, after the
+     * expression is compiled, so an invalid expression throws PatternSyntax either way.
      *
+     * @param array<int|string, string> $matches
      *
-     * @return bool
+     * @param-out array<int|string, string> $matches
      */
-    public function isOneOfHosts(array $hosts)
+    public function queryStringMatch(string $pattern, array &$matches = []): bool
+    {
+        $queryString = $this->serverString('QUERY_STRING');
+        if ($queryString === null) {
+            return self::compiledButAbsent($pattern, $matches);
+        }
+
+        return Pcre::match($pattern, $queryString, $matches);
+    }
+
+    /**
+     * Answer of a regex predicate whose subject is absent from the server array: compiles the
+     * expression (PatternSyntax when it is invalid) and returns false with no captures.
+     *
+     * @param array<int|string, string> $matches
+     *
+     * @param-out array<int|string, string> $matches
+     */
+    private static function compiledButAbsent(string $pattern, array &$matches): bool
+    {
+        Pcre::match($pattern, '');
+        $matches = [];
+
+        return false;
+    }
+
+    /**
+     * SERVER_PORT is optional in the server array: without it the answer is false.
+     */
+    public function portEqual(int|string $port): bool
+    {
+        $serverPort = $this->serverString('SERVER_PORT');
+        if ($serverPort === null) {
+            return false;
+        }
+
+        return (int) $serverPort === (int) $port;
+    }
+
+    /**
+     * Check if the request host is in the list of host: each entry is compared with hostEqual
+     * (case-insensitive equality, false without HTTP_HOST).
+     *
+     * @param array<array-key, string> $hosts
+     */
+    public function isOneOfHosts(array $hosts): bool
     {
         foreach ($hosts as $host) {
-            if ($this->matchHost($host)) {
+            if ($this->hostEqual($host)) {
                 return true;
             }
         }
@@ -118,54 +151,66 @@ class RouteRequest extends HttpRequest implements RouteRequestMatcher
         return false;
     }
 
-    public function pathLike($path)
+    public function pathLike(string $path): bool
     {
-        $pattern = '#'.preg_quote((string) $path, '#').'#i';
+        $pattern = '#' . preg_quote($path, '#') . '#i';
 
-        return preg_match($pattern, $this->path) !== false;
+        return preg_match($pattern, $this->path) === 1;
     }
 
-    public function pathMatch($pattern, array &$matches = [])
+    /**
+     * @param array<int|string, string> $matches
+     *
+     * @param-out array<int|string, string> $matches
+     */
+    public function pathMatch(string $pattern, array &$matches = []): bool
     {
-        return preg_match($pattern, $this->path, $matches) !== false;
+        return Pcre::match($pattern, $this->path, $matches);
     }
 
-    public function pathEqual($path)
+    public function pathEqual(string $path): bool
     {
-        return strcasecmp((string) $path, $this->path) === 0;
+        return strcasecmp($path, $this->path) === 0;
     }
 
-    public function pathContain($path)
+    public function pathContain(string $path): bool
     {
-        return str_contains($this->path, (string) $path);
+        return str_contains($this->path, $path);
     }
 
-    public function pathStartWith($path)
+    public function pathStartWith(string $path): bool
     {
-        return str_starts_with($this->path, (string) $path);
+        return str_starts_with($this->path, $path);
     }
 
-    public function pathEndWith($suffix)
+    public function pathEndWith(string $suffix): bool
     {
-        $p = strrpos($this->path, (string) $suffix);
-
-        return ($p == strlen($this->path) - strlen((string) $suffix));
+        return str_ends_with($this->path, $suffix);
     }
 
-    public function hostMatch($host, array &$matches = [])
+    /**
+     * HTTP_HOST is optional in the server array: without it the answer is false, after the
+     * expression is compiled, so an invalid expression throws PatternSyntax either way.
+     *
+     * @param array<int|string, string> $matches
+     *
+     * @param-out array<int|string, string> $matches
+     */
+    public function hostMatch(string $host, array &$matches = []): bool
     {
-        if (isset($this->serverParameters['HTTP_HOST'])) {
-            return preg_match($host, (string) $this->serverParameters['HTTP_HOST'], $matches) !== false;
+        $httpHost = $this->serverString('HTTP_HOST');
+        if ($httpHost !== null) {
+            return Pcre::match($host, $httpHost, $matches);
         }
 
-        // the HTTP HOST is not defined.
-        return false;
+        return self::compiledButAbsent($host, $matches);
     }
 
-    public function hostEqual($host)
+    public function hostEqual(string $host): bool
     {
-        if (isset($this->serverParameters['HTTP_HOST'])) {
-            return strcasecmp((string) $this->serverParameters['HTTP_HOST'], (string) $host) === 0;
+        $httpHost = $this->serverString('HTTP_HOST');
+        if ($httpHost !== null) {
+            return strcasecmp($httpHost, $host) === 0;
         }
 
         return false;
@@ -173,10 +218,8 @@ class RouteRequest extends HttpRequest implements RouteRequestMatcher
 
     /**
      * requestMethodEqual does not use PCRE pattern to match request method.
-     *
-     * @param string $requestMethod
      */
-    public function requestMethodEqual($requestMethod)
+    public function requestMethodEqual(string $requestMethod): bool
     {
         return strcasecmp($this->requestMethod, $requestMethod) === 0;
     }
@@ -184,92 +227,181 @@ class RouteRequest extends HttpRequest implements RouteRequestMatcher
     /**
      * A helper function for creating request object based on request method and request uri.
      *
-     * @param string $method
-     * @param string $path
-     * @param array  $headers The headers will be built on $_SERVER if the argument is null.
+     * @param array<array-key, mixed> $env a flat server array, or a globals-shaped array with the key _SERVER
      *
-     * @return RouteRequest
+     * @throws \InvalidArgumentException when _SERVER, _REQUEST, _GET, _POST, _COOKIE or _SESSION is not an array
      */
-    public static function create($method, $path, array $env = [])
+    public static function create(string $method, string $path, array $env = []): self
     {
-        $self = new self($method, $path);
-
-        if (function_exists('getallheaders')) {
-            $self->headers = getallheaders();
-        } else {
-            // TODO: filter array keys by their prefix, consider adding an extension function for this.
-            $self->headers = self::createHeadersFromServerGlobal($env);
-        }
-
-        if (isset($env['_SERVER'])) {
-            $self->serverParameters = $env['_SERVER'];
-        } else {
-            $self->serverParameters = $env;
-        }
-
-        $self->parameters = $env['_REQUEST'] ?? [];
-        $self->queryParameters = $env['_GET'] ?? [];
-        $self->bodyParameters = $env['_POST'] ?? [];
-        $self->cookieParameters = $env['_COOKIE'] ?? [];
-        $self->sessionParameters = $env['_SESSION'] ?? [];
-
-        return $self;
+        return self::fromEnvironment($method, $path, $env);
     }
 
     /**
-     * Create request object from global variables.
+     * Create request object from an environment array: a flat server array, or a globals-shaped
+     * array with the keys _SERVER, _REQUEST, _GET, _POST, _COOKIE and _SESSION. The path is
+     * PATH_INFO, else REQUEST_URI without its query string (as in fromServer); the query string
+     * is read from QUERY_STRING by queryStringMatch. The request method defaults to GET when
+     * REQUEST_METHOD is absent.
      *
-     * @return RouteRequest
+     * @param array<array-key, mixed> $env
+     *
+     * @throws \InvalidArgumentException when neither PATH_INFO nor REQUEST_URI is present, or a
+     *                                   key read here holds a value of the wrong type
      */
-    public static function createFromEnv(array $env)
+    public static function createFromEnv(array $env): self
     {
-        // cache
-        if (isset($env['__request_object'])) {
-            return $env['__request_object'];
+        $server = self::arrayEntry($env, '_SERVER');
+
+        $path = self::stringEntry($env, 'PATH_INFO');
+        if ($path === null && ($uri = self::stringEntry($env, 'REQUEST_URI')) !== null) {
+            $path = self::pathOfUri($uri);
+        }
+        $path ??= self::stringEntry($server, 'PATH_INFO');
+        if ($path === null && ($uri = self::stringEntry($server, 'REQUEST_URI')) !== null) {
+            $path = self::pathOfUri($uri);
+        }
+        if ($path === null) {
+            throw new \InvalidArgumentException('The environment has no PATH_INFO or REQUEST_URI, neither at the top level nor in _SERVER.');
         }
 
-        if (isset($env['PATH_INFO'])) {
-            $path = $env['PATH_INFO'];
-        } elseif (isset($env['REQUEST_URI'])) {
-            $path = $env['REQUEST_URI'];
-        } elseif (isset($env['_SERVER']['PATH_INFO'])) {
-            $path = $env['_SERVER']['PATH_INFO'];
-        } elseif (isset($env['_SERVER']['REQUEST_URI'])) {
-            $path = $env['_SERVER']['REQUEST_URI'];
-        } else {
-            // XXX: check path or throw exception
-            $path = '/';
+        // The superglobal shape keeps REQUEST_METHOD under _SERVER.
+        $requestMethod = self::stringEntry($env, 'REQUEST_METHOD') ?? self::stringEntry($server, 'REQUEST_METHOD') ?? 'GET';
+
+        return self::fromEnvironment($requestMethod, $path, $env);
+    }
+
+    /**
+     * Create a request from a server array of the shape of $_SERVER.
+     *
+     * The method is REQUEST_METHOD; the path is PATH_INFO, or REQUEST_URI without its query
+     * string. Headers are derived from the HTTP_* keys, CONTENT_TYPE and CONTENT_LENGTH. The
+     * parameter arrays (query, body, cookies, session) stay empty: this factory reads only the
+     * server array. This is the only place in the library that reads $_SERVER, and only when
+     * $server is null.
+     *
+     * @param array<array-key, mixed>|null $server
+     *
+     * @throws \InvalidArgumentException when REQUEST_METHOD or both PATH_INFO and REQUEST_URI are missing
+     */
+    public static function fromServer(?array $server = null): self
+    {
+        $server ??= $_SERVER;
+
+        $requestMethod = self::stringEntry($server, 'REQUEST_METHOD');
+        if ($requestMethod === null) {
+            throw new \InvalidArgumentException('The server array has no REQUEST_METHOD.');
         }
 
-        $requestMethod = 'GET';
-        if (isset($env['REQUEST_METHOD'])) {
-            $requestMethod = $env['REQUEST_METHOD'];
-        } else if (isset($env['_SERVER']['REQUEST_METHOD'])) { // compatibility for superglobal
-            $requestMethod = $env['_SERVER']['REQUEST_METHOD'];
+        $path = self::stringEntry($server, 'PATH_INFO');
+        if ($path === null && ($uri = self::stringEntry($server, 'REQUEST_URI')) !== null) {
+            $path = self::pathOfUri($uri);
+        }
+        if ($path === null) {
+            throw new \InvalidArgumentException('The server array has no PATH_INFO or REQUEST_URI.');
         }
 
-        // create request object with request method and path,
-        // we can assign other parameters later.
-        $self = new self($requestMethod, $path);
-        if (function_exists('getallheaders')) {
-            $self->headers = getallheaders();
-        } else {
-            // TODO: filter array keys by their prefix, consider adding an extension function for this.
-            $self->headers = self::createHeadersFromServerGlobal($env);
+        return new self($requestMethod, $path, $server);
+    }
+
+    /**
+     * A request whose server parameters are $env['_SERVER'], or $env itself when it has no such
+     * key, and whose parameter arrays are the superglobal-shaped keys of $env (each optional).
+     *
+     * @param array<array-key, mixed> $env
+     *
+     * @throws \InvalidArgumentException when one of those keys is not an array
+     */
+    private static function fromEnvironment(string $method, string $path, array $env): self
+    {
+        return new self(
+            $method,
+            $path,
+            isset($env['_SERVER']) ? self::arrayEntry($env, '_SERVER') : $env,
+            self::arrayEntry($env, '_REQUEST'),
+            self::arrayEntry($env, '_GET'),
+            self::arrayEntry($env, '_POST'),
+            self::arrayEntry($env, '_COOKIE'),
+            self::arrayEntry($env, '_SESSION'),
+        );
+    }
+
+    private static function pathOfUri(string $uri): string
+    {
+        return explode('?', $uri, 2)[0];
+    }
+
+    /**
+     * The server parameter $key as a string; null when it is absent.
+     *
+     * @throws \InvalidArgumentException when it is present and not a scalar
+     */
+    private function serverString(string $key): ?string
+    {
+        return self::stringEntry($this->serverParameters, $key);
+    }
+
+    /**
+     * $array[$key] as a string; null when the key is absent or null. A scalar is converted.
+     *
+     * @param array<array-key, mixed> $array
+     *
+     * @throws \InvalidArgumentException when the value is not a scalar
+     */
+    private static function stringEntry(array $array, string $key): ?string
+    {
+        $value = $array[$key] ?? null;
+        if ($value === null || is_string($value)) {
+            return $value;
+        }
+        if (!is_scalar($value)) {
+            throw new \InvalidArgumentException(sprintf('The value of %s is a %s, a string is expected.', $key, get_debug_type($value)));
         }
 
-        if (isset($env['_SERVER'])) {
-            $self->serverParameters = $env['_SERVER'];
-        } else {
-            $self->serverParameters = $env;
+        return (string) $value;
+    }
+
+    /**
+     * $array[$key] as an array; an empty array when the key is absent or null.
+     *
+     * @param array<array-key, mixed> $array
+     *
+     * @return array<array-key, mixed>
+     *
+     * @throws \InvalidArgumentException when the value is not an array
+     */
+    private static function arrayEntry(array $array, string $key): array
+    {
+        $value = $array[$key] ?? [];
+        if (!is_array($value)) {
+            throw new \InvalidArgumentException(sprintf('The value of %s is a %s, an array is expected.', $key, get_debug_type($value)));
         }
 
-        $self->parameters = $env['_REQUEST'];
-        $self->queryParameters = $env['_GET'];
-        $self->bodyParameters = $env['_POST'];
-        $self->cookieParameters = $env['_COOKIE'];
-        $self->sessionParameters = $env['_SESSION'];
+        return $value;
+    }
 
-        return $env['__request_object'] = $self;
+    /**
+     * Header name to value from the HTTP_* keys, CONTENT_TYPE and CONTENT_LENGTH of a server
+     * array: HTTP_USER_AGENT becomes "User-Agent", CONTENT_TYPE becomes "Content-Type".
+     *
+     * @param array<array-key, mixed> $server
+     *
+     * @return array<string, mixed>
+     */
+    private static function headersFromServer(array $server): array
+    {
+        $headers = [];
+        foreach ($server as $key => $value) {
+            $key = (string) $key;
+            if (str_starts_with($key, 'HTTP_')) {
+                $name = substr($key, 5);
+            } elseif ($key === 'CONTENT_TYPE' || $key === 'CONTENT_LENGTH') {
+                $name = $key;
+            } else {
+                continue;
+            }
+            $headers[implode('-', array_map(ucfirst(...), explode('_', strtolower($name))))] = $value;
+        }
+
+        return $headers;
     }
 }

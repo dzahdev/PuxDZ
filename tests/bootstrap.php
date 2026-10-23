@@ -1,3 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
+// Fixture classes in tests/Fixtures are loaded on first use through the autoload-dev
+// classmap in composer.json, not required here.
 require __DIR__ . '/../vendor/autoload.php';
-require __DIR__ . "/controllers.php";

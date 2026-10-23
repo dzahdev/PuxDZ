@@ -1,54 +1,90 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pux;
 
-use Exception;
-use LogicException;
-use ReflectionClass;
 use Closure;
-use Pux\Controller\Controller;
+use Pux\Exception\InvalidCallback;
+use ReflectionFunction;
 
-class RouteExecutor
+/**
+ * Runs the callback of a dispatched route.
+ *
+ * The callback is one of: a Closure, the name of a function, [class name, method] (the class
+ * is instantiated, with options['constructor_args'] when given), [object, method], or an
+ * invokable object. Mux::add() turns a 'Class:method' string into [class name, method].
+ * Arguments are bound by ArgumentResolver (by name, by position, route default, own default;
+ * a required parameter without a value throws MissingArgument; a scalar parameter type converts
+ * the value, see ArgumentResolver).
+ *
+ * @phpstan-import-type Route from Mux
+ */
+final class RouteExecutor
 {
-    public static function execute(array $route)
+    /**
+     * @param Route $route a route returned by Mux::dispatch()
+     *
+     * @return mixed the result of the callback
+     *
+     * @throws InvalidCallback when the callback is not callable or names a missing class or method
+     * @throws \Pux\Exception\MissingArgument when a required parameter gets no value
+     */
+    public static function execute(array $route): mixed
     {
-        [$pcre, $pattern, $callbackArg, $options] = $route;
+        [, , $callback, $options] = $route;
 
-        // create the reflection class
-        $reflectionClass = new ReflectionClass( $callbackArg[0] );
+        $callable = self::resolveCallable($callback, self::arrayOption($options, 'constructor_args'));
+        $function = new ReflectionFunction(Closure::fromCallable($callable));
+        $scope = $function->getClosureScopeClass();
+        $callableName = ($scope !== null ? $scope->getName() . '::' : '') . $function->getName();
 
-        $constructArgs = $options['constructor_args'] ?? null;
+        $arguments = ArgumentResolver::bind($function->getParameters(), self::arrayOption($options, 'vars') ?? [], self::arrayOption($options, 'default') ?? [], $callableName);
 
-        // if the first argument is a class name string,
-        // then create the controller object.
-        if (is_string($callbackArg[0])) {
-            $callbackArg[0] = $controller = $constructArgs ? $reflectionClass->newInstanceArgs($constructArgs) : $reflectionClass->newInstance();
-        } else {
-            $controller = $callbackArg[0];
+        return $callable(...$arguments);
+    }
+
+    /**
+     * The route option $key, which is an array when it is present.
+     *
+     * @param array<string, mixed> $options
+     *
+     * @return array<array-key, mixed>|null null when the option is absent
+     *
+     * @throws \InvalidArgumentException when the option is present and not an array
+     */
+    private static function arrayOption(array $options, string $key): ?array
+    {
+        $value = $options[$key] ?? null;
+        if ($value !== null && !is_array($value)) {
+            throw new \InvalidArgumentException(sprintf('The route option %s is a %s; an array is expected.', $key, get_debug_type($value)));
         }
 
-        // check controller action method
-        if ($controller && ! method_exists( $controller ,$callbackArg[1])) {
-            throw new LogicException(sprintf('Controller action method \'%s\' doesn\'t exist.', $callbackArg[1]));
-        }
+        return $value;
+    }
 
-        $rps = $reflectionClass->getMethod($callbackArg[1])->getParameters();
-
-        $variables = $options['vars'] ?? [];
-
-        $arguments = [];
-        foreach ($rps as $rp) {
-            $n = $rp->getName();
-            if (isset( $variables[ $n ] )) {
-                $arguments[] = $variables[ $n ];
-            } elseif (isset($route[3]['default'][ $n ] )
-                            && $default = $route[3]['default'][ $n ]) {
-                $arguments[] = $default;
-            } elseif (! $rp->isOptional() && ! $rp->allowsNull()) {
-                throw new Exception('parameter is not defined.');
+    /**
+     * @param array<array-key, mixed>|null $constructArgs arguments of the constructor of a [class name, method] callback
+     *
+     * @throws InvalidCallback when a class or a method is missing or the callback is not callable
+     */
+    private static function resolveCallable(mixed $callback, ?array $constructArgs): callable
+    {
+        if (is_array($callback) && count($callback) === 2 && is_string($callback[0] ?? null) && is_string($callback[1] ?? null)) {
+            [$class, $method] = $callback;
+            if (! class_exists($class)) {
+                throw InvalidCallback::classNotFound($class);
             }
+            if (! method_exists($class, $method)) {
+                throw InvalidCallback::methodNotFound($class, $method);
+            }
+            $callback = [$constructArgs ? new $class(...$constructArgs) : new $class(), $method];
         }
 
-        return call_user_func_array($callbackArg, $arguments);
+        if (! is_callable($callback)) {
+            throw InvalidCallback::notCallable($callback);
+        }
+
+        return $callback;
     }
 }

@@ -1,0 +1,9 @@
+# Tests and fixtures at level 5. At level 6 and above PHPStan reports the fixtures that model
+# untyped 2.x controllers (missing parameter and return types are what those fixtures test),
+# and at level 8 every offset read on the ?array result of Mux::dispatch(); raising this level
+# changes test files, so it is a separate task (see .task/05-этап-ревью.md).
+parameters:
+    level: 5
+    paths:
+        - tests
+    tmpDir: build/phpstan-tests

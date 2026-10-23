@@ -1,0 +1,7 @@
+# Library code at the highest level, without a baseline and without ignored errors.
+# The tests are analysed by phpstan-tests.neon.dist (composer stan runs both).
+parameters:
+    level: 9
+    paths:
+        - src
+    tmpDir: build/phpstan
