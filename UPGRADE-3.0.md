@@ -3,7 +3,7 @@
 This file lists every incompatible change between the 2.0.x-dev branch of Pux (package
 `corneltek/pux`, commit 30bc692 of 2023-03-28) and PuxDZ 3.0.0. Each entry gives the behavior
 before, the behavior after and what to change in application code. The IDs in parentheses
-(R1-R6, L1-L38, P1-P6) are the defect IDs listed in [CHANGES.md](CHANGES.md).
+(R1-R6, L1-L39, P1-P6) are the defect IDs listed in [CHANGES.md](CHANGES.md).
 
 Order of work for an upgrade:
 
@@ -344,8 +344,10 @@ public function itemAction($id)
 - The constructor is `__construct(?Mux $mux = null, array $options = [])` without a reference
   parameter (P2; before: `Mux & $mux = null`, an implicitly nullable parameter deprecated in
   PHP 8.4).
+- `build()` drops a trailing `/` of the prefix (L39; before: the default prefix `'/'` mounted
+  resources at `//<id>`, and `'/api/'` at `/api//<id>`).
 - What to do: call `build()` once after all `addResource()` calls; remove code that removed
-  duplicate routes.
+  duplicate routes. Dispatch resources of the default prefix at `/<id>`.
 
 ## Pux\MuxCompiler
 

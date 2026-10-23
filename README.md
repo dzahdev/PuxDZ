@@ -618,10 +618,10 @@ DELETE /api/products/3 => delete product 3
 
 `Pux\MuxBuilder\RESTfulMuxBuilder` takes an optional `Mux` and the option `prefix`.
 `addResource(string $id, Expandable $resource)` registers a resource and `build()` mounts every
-registered resource at `prefix . '/' . $id` and returns the `Mux`. The resources are mounted by
-the first `build()` only: a second call returns the same `Mux` unchanged, and `addResource()`
-after `build()` throws `\LogicException`. Give the prefix without a trailing slash; the default
-prefix `'/'` produces paths that start with `//`.
+registered resource at `rtrim(prefix, '/') . '/' . $id` and returns the `Mux`: the default
+prefix `'/'` mounts `product` at `/product`, the prefixes `'/api'` and `'/api/'` at
+`/api/product`. The resources are mounted by the first `build()` only: a second call returns the
+same `Mux` unchanged, and `addResource()` after `build()` throws `\LogicException`.
 
 `Pux\Controller\RESTfulController::expand()` routes five actions:
 

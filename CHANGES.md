@@ -99,6 +99,8 @@ incompatibilities); `#N` is the issue or pull request number in c9s/Pux. L31 was
   skipping the route (L37).
 - The variables of an optional group that is not in the path are left out of `vars` also when
   a later group matched, so their route defaults are bound (L38).
+- `RESTfulMuxBuilder::build()` drops a trailing `/` of the prefix, so the default prefix `/`
+  mounts resources at `/<id>` instead of `//<id>` (L39).
 - `match()` and `dispatch()` declare `?RouteRequest` explicitly; the implicit nullable
   parameter was deprecated in PHP 8.4 (P1).
 - `RESTfulMuxBuilder::__construct(?Mux $mux = null, array $options = [])` has no reference

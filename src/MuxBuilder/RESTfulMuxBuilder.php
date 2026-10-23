@@ -30,7 +30,9 @@ final class RESTfulMuxBuilder
     private bool $built = false;
 
     /**
-     * @param array{prefix?: string} $options 'prefix' (default '/') of every resource path
+     * @param array{prefix?: string} $options 'prefix' (default '/') of every resource path; a
+     *                                        trailing "/" of the prefix is dropped, so '/' and
+     *                                        '' mount at "/<resource id>"
      */
     public function __construct(?Mux $mux = null, array $options = [])
     {
@@ -57,7 +59,8 @@ final class RESTfulMuxBuilder
     }
 
     /**
-     * build method mounts every registered resource at "<prefix>/<resource id>" and returns
+     * build method mounts every registered resource at "<prefix>/<resource id>" (the prefix
+     * without its trailing "/") and returns
      * the Mux. The resources are mounted by the first call only; a later call returns the same
      * Mux unchanged.
      */
@@ -67,7 +70,7 @@ final class RESTfulMuxBuilder
             return $this->mux;
         }
 
-        $prefix = $this->options['prefix'];
+        $prefix = rtrim($this->options['prefix'], '/');
         foreach ($this->resources as $resId => $controller) {
             $this->mux->mount($prefix . '/' . $resId, $controller->expand());
         }

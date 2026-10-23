@@ -32,6 +32,41 @@ final class BuildTest extends TestCase
         self::assertSame('10', $route[3]['vars']['id']);
     }
 
+    /**
+     * The default prefix is "/", and the resource path has one slash before the resource id.
+     * Failed before the L39 fix: the path was "//product/:id", so "/product/10" matched no route.
+     *
+     * @see PLAN-port-php82.md L39
+     */
+    public function test_build_with_default_prefix_mounts_resource_at_root_with_single_slash(): void
+    {
+        $builder = new RESTfulMuxBuilder();
+        $builder->addResource('product', new PlainResource());
+
+        $route = $builder->build()->dispatch('/product/10');
+
+        self::assertNotNull($route);
+        self::assertSame('/product/:id', $route[3]['pattern']);
+        self::assertSame('10', $route[3]['vars']['id']);
+    }
+
+    /**
+     * A trailing slash of the prefix is dropped before "/<resource id>" is appended.
+     * Failed before the L39 fix: the path was "/api//product/:id".
+     *
+     * @see PLAN-port-php82.md L39
+     */
+    public function test_build_with_prefix_ending_in_slash_mounts_resource_with_single_slash(): void
+    {
+        $builder = new RESTfulMuxBuilder(null, ['prefix' => '/api/']);
+        $builder->addResource('product', new PlainResource());
+
+        $route = $builder->build()->dispatch('/api/product/10');
+
+        self::assertNotNull($route);
+        self::assertSame('/api/product/:id', $route[3]['pattern']);
+    }
+
     public function test_build_returns_mux_given_to_constructor(): void
     {
         $mux = new Mux();
