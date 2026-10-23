@@ -15,9 +15,12 @@ namespace Pux;
 interface Handler
 {
     /**
-     * @param array $environment server parameters plus the keys pux.controller_action and
-     *                           pux.route
-     * @param array $response    response in the form [code, headers, body]
+     * The return type is declared in the docblock only, so that implementations written for
+     * 2.x without a return type stay compatible with the interface.
+     *
+     * @param array<array-key, mixed> $environment server parameters plus the keys
+     *                                             pux.controller_action and pux.route
+     * @param array<array-key, mixed> $response    response in the form [code, headers, body]
      *
      * @return mixed the result of the action, usually a response triple or a string
      */

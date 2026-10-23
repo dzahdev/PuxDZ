@@ -1,76 +1,93 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Pux\Controller;
-use Pux\Controller\ExpandableController;
+
 use Pux\Mux;
 use Pux\RequestMethod;
 
+/**
+ * A resource controller: expand() routes the five actions below by request method. A
+ * subclass overrides the actions it serves.
+ *
+ * The actions declare their return type in the docblock only, so that overrides written for
+ * 2.x without a return type stay compatible.
+ */
 abstract class RESTfulController extends ExpandableController
 {
     /**
      * @Route("");
      * @Method("GET")
+     *
+     * @return mixed
      */
     public function collectionAction()
     {
-
+        return null;
     }
 
     /**
      * @Method("POST")
      * @Route("");
+     *
+     * @return mixed
      */
     public function createAction()
     {
-
+        return null;
     }
 
     /**
      * @Route("/:id")
      * @Method("POST")
+     *
+     * @return mixed
      */
-    public function updateAction($id)
+    public function updateAction(mixed $id)
     {
-
+        return null;
     }
 
     /**
      * @Route("/:id")
      * @Method("GET")
+     *
+     * @return mixed
      */
-    public function loadAction($id)
+    public function loadAction(mixed $id)
     {
-
+        return null;
     }
 
     /**
      * @Route("/:id");
      * @Method("DELETE")
+     *
+     * @return mixed
      */
-    public function deleteAction($id)
+    public function deleteAction(mixed $id)
     {
-
+        return null;
     }
-
-
-
 
     /**
      * Expand controller actions into Mux object
      *
-     * @return Mux
+     * @param array<string, mixed> $options route options merged into every route
      */
-    public function expand(array $options = [], $dynamic = false)
+    public function expand(array $options = [], bool $dynamic = false): Mux
     {
-        $mux   = new Mux();
+        $mux = new Mux();
         $target = $dynamic ? $this : $this->getClass();
         $mux->add('/:id', [$target, 'updateAction'], array_merge($options, ['method' => RequestMethod::POST->value]));
-        $mux->add('/:id', [$target, 'loadAction'],   array_merge($options, ['method' => RequestMethod::GET->value]));
+        $mux->add('/:id', [$target, 'loadAction'], array_merge($options, ['method' => RequestMethod::GET->value]));
         $mux->add('/:id', [$target, 'deleteAction'], array_merge($options, ['method' => RequestMethod::DELETE->value]));
-        $mux->add('', [$target, 'createAction'],     array_merge($options, ['method' => RequestMethod::POST->value]));
+        $mux->add('', [$target, 'createAction'], array_merge($options, ['method' => RequestMethod::POST->value]));
         $mux->add('', [$target, 'collectionAction'], array_merge($options, ['method' => RequestMethod::GET->value]));
+
         return $mux;
     }
-
 
     /**
      * Sets the HTTP response status code through http_response_code().
@@ -80,7 +97,7 @@ abstract class RESTfulController extends ExpandableController
      *
      * @param int $code HTTP status code
      */
-    public function code($code)
+    public function code(int $code): void
     {
         http_response_code($code);
     }
@@ -88,7 +105,7 @@ abstract class RESTfulController extends ExpandableController
     /**
      * @deprecated since 3.0, use the response array; removed in 4.0
      */
-    public function codeOk()
+    public function codeOk(): void
     {
         $this->code(200);
     }
@@ -96,7 +113,7 @@ abstract class RESTfulController extends ExpandableController
     /**
      * @deprecated since 3.0, use the response array; removed in 4.0
      */
-    public function codeCreated()
+    public function codeCreated(): void
     {
         $this->code(201);
     }
@@ -104,7 +121,7 @@ abstract class RESTfulController extends ExpandableController
     /**
      * @deprecated since 3.0, use the response array; removed in 4.0
      */
-    public function codeAccepted()
+    public function codeAccepted(): void
     {
         $this->code(202);
     }
@@ -112,7 +129,7 @@ abstract class RESTfulController extends ExpandableController
     /**
      * @deprecated since 3.0, use the response array; removed in 4.0
      */
-    public function codeNoContent()
+    public function codeNoContent(): void
     {
         $this->code(204);
     }
@@ -120,7 +137,7 @@ abstract class RESTfulController extends ExpandableController
     /**
      * @deprecated since 3.0, use the response array; removed in 4.0
      */
-    public function codeBadRequest()
+    public function codeBadRequest(): void
     {
         $this->code(400);
     }
@@ -128,7 +145,7 @@ abstract class RESTfulController extends ExpandableController
     /**
      * @deprecated since 3.0, use the response array; removed in 4.0
      */
-    public function codeForbidden()
+    public function codeForbidden(): void
     {
         $this->code(403);
     }
@@ -136,14 +153,16 @@ abstract class RESTfulController extends ExpandableController
     /**
      * @deprecated since 3.0, use the response array; removed in 4.0
      */
-    public function codeNotFound()
+    public function codeNotFound(): void
     {
         $this->code(404);
     }
 
-    public function getClass()
+    /**
+     * @return class-string<static>
+     */
+    public function getClass(): string
     {
         return static::class;
     }
 }
-
