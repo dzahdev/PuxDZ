@@ -25,7 +25,7 @@ final class StringCallbackTest extends TestCase
      * Failed before the L35 fix with ['ProductController', '', 'listAction']: the callback was
      * split on every ':'.
      *
-     * @see PLAN-port-php82.md L35
+     * @see docs/defect-registry.md L35
      */
     public function test_dispatch_route_added_with_double_colon_callback_returns_class_and_method(): void
     {
@@ -36,7 +36,7 @@ final class StringCallbackTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L35
+     * @see docs/defect-registry.md L35
      */
     public function test_dispatch_pcre_route_added_with_namespaced_double_colon_callback_returns_class_and_method(): void
     {

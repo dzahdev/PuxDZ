@@ -108,7 +108,7 @@ final class CompileToFileTest extends TestCase
      * Failed before the L17 fix: load() returned true (the result of merge()), not the Mux its
      * docblock named.
      *
-     * @see PLAN-port-php82.md L17
+     * @see docs/defect-registry.md L17
      */
     public function test_compiler_load_returns_merged_mux_dispatching_loaded_and_earlier_routes(): void
     {
@@ -134,7 +134,7 @@ final class CompileToFileTest extends TestCase
      * Failed before the R4 fix with Error 'Class "Pux\Exception" not found' (Exception was not
      * imported in namespace Pux).
      *
-     * @see PLAN-port-php82.md R4
+     * @see docs/defect-registry.md R4
      */
     public function test_merge_with_callback_validation_rejects_route_to_unknown_controller(): void
     {
@@ -153,7 +153,7 @@ final class CompileToFileTest extends TestCase
      * Failed before the L18 fix: validation created the controller to call method_exists(), so
      * the constructor ran (here it throws).
      *
-     * @see PLAN-port-php82.md L18
+     * @see docs/defect-registry.md L18
      */
     public function test_merge_with_callback_validation_accepts_route_without_instantiating_controller(): void
     {
@@ -173,7 +173,7 @@ final class CompileToFileTest extends TestCase
     /**
      * Failed before the L18 fix with the exception of the constructor instead of InvalidCallback.
      *
-     * @see PLAN-port-php82.md L18
+     * @see docs/defect-registry.md L18
      */
     public function test_merge_with_callback_validation_rejects_route_to_unknown_method(): void
     {
@@ -191,7 +191,7 @@ final class CompileToFileTest extends TestCase
     /**
      * Failed before the L34 fix with TypeError: class_exists() was called with the object.
      *
-     * @see PLAN-port-php82.md L34
+     * @see docs/defect-registry.md L34
      */
     public function test_merge_with_callback_validation_accepts_object_and_existing_method(): void
     {
@@ -206,7 +206,7 @@ final class CompileToFileTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L34
+     * @see docs/defect-registry.md L34
      */
     public function test_merge_with_callback_validation_rejects_object_and_unknown_method(): void
     {
@@ -222,7 +222,7 @@ final class CompileToFileTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L34
+     * @see docs/defect-registry.md L34
      */
     public function test_merge_with_callback_validation_accepts_closure_and_invokable_object(): void
     {
@@ -249,7 +249,7 @@ final class CompileToFileTest extends TestCase
      * Failed before the L36 fix: file_put_contents() into a missing directory emitted a warning
      * and Mux::compile() returned false.
      *
-     * @see PLAN-port-php82.md L36
+     * @see docs/defect-registry.md L36
      */
     public function test_mux_compile_into_missing_directory_throws_cache_write_failed_naming_file(): void
     {
@@ -266,7 +266,7 @@ final class CompileToFileTest extends TestCase
     /**
      * Failed before the L36 fix: MuxCompiler::compile() returned false with a warning.
      *
-     * @see PLAN-port-php82.md L36
+     * @see docs/defect-registry.md L36
      */
     public function test_compiler_compile_into_missing_directory_throws_cache_write_failed_naming_file(): void
     {

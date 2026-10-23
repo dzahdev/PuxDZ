@@ -39,8 +39,8 @@ final class BuildTest extends TestCase
      * "Mux & $mux = null", PHP 8.4 and 8.5 report a deprecation when the class is loaded, and
      * the suite fails on it (failOnDeprecation).
      *
-     * @see PLAN-port-php82.md L39
-     * @see PLAN-port-php82.md P2
+     * @see docs/defect-registry.md L39
+     * @see docs/defect-registry.md P2
      */
     public function test_build_with_default_prefix_mounts_resource_at_root_with_single_slash(): void
     {
@@ -58,7 +58,7 @@ final class BuildTest extends TestCase
      * A trailing slash of the prefix is dropped before "/<resource id>" is appended.
      * Failed before the L39 fix: the path was "/api//product/:id".
      *
-     * @see PLAN-port-php82.md L39
+     * @see docs/defect-registry.md L39
      */
     public function test_build_with_prefix_ending_in_slash_mounts_resource_with_single_slash(): void
     {
@@ -84,7 +84,7 @@ final class BuildTest extends TestCase
      * Failed before the L14 fix with 2 routes instead of 1: addResource() mounted the resource
      * and build() mounted it again.
      *
-     * @see PLAN-port-php82.md L14
+     * @see docs/defect-registry.md L14
      */
     public function test_build_after_add_resource_mounts_each_resource_route_once(): void
     {
@@ -99,7 +99,7 @@ final class BuildTest extends TestCase
      * Failed before the L33 fix with 2 routes instead of 1: each build() call mounted every
      * registered resource again.
      *
-     * @see PLAN-port-php82.md L33
+     * @see docs/defect-registry.md L33
      */
     public function test_build_called_twice_returns_same_mux_with_each_resource_route_once(): void
     {
@@ -117,7 +117,7 @@ final class BuildTest extends TestCase
     /**
      * A resource registered after build() would never be mounted: addResource() refuses it.
      *
-     * @see PLAN-port-php82.md L33
+     * @see docs/defect-registry.md L33
      */
     public function test_add_resource_after_build_throws_logic_exception_naming_resource(): void
     {
@@ -147,7 +147,7 @@ final class BuildTest extends TestCase
      * Failed before the L4 fix: dispatch() did not pass the request to match(), which read the
      * method from the server superglobal.
      *
-     * @see PLAN-port-php82.md L4
+     * @see docs/defect-registry.md L4
      */
     #[DataProvider('resourceRequests')]
     public function test_build_with_restful_controller_selects_action_by_request_method(string $method, string $action): void

@@ -3,7 +3,7 @@
 Terms used in test names, ADRs and code reviews. Each definition describes what the code in
 `src/` does at the time of writing (Stage 0 of the PHP 8.2 port), with the class and method that
 implement it. Where the code contradicts its own docblock, both are named. Defect IDs (R*, L*,
-P*) refer to the defect registry kept with the port plan.
+P*) refer to the defect registry [docs/defect-registry.md](docs/defect-registry.md).
 
 ## Mux
 
@@ -241,7 +241,7 @@ name, without instantiating it (Stage 4b L18). `Mux::__set_state()` requires `ro
 
 Red tests are kept in the PHPUnit group `known-defect`, which `phpunit.xml.dist` excludes, so
 that `composer test` stays green. Such a test specifies behavior that fails today because of a
-defect in the registry; the docblock names the ID (`@see PLAN-port-php82.md L4`). The cycle that
+defect in the registry; the docblock names the ID (`@see docs/defect-registry.md L4`). The cycle that
 fixes the defect removes the group. (Until Stage 1 a second group, `pending-stage-1`, held the
 tests that could not load before the third-party parent classes were replaced.)
 

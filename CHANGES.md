@@ -5,9 +5,10 @@ CHANGELOG
 
 First release of the fork PuxDZ, package `dzahdev/puxdz`. Incompatible changes and migration
 steps: [UPGRADE-3.0.md](UPGRADE-3.0.md). IDs in parentheses refer to the defect registry of the
-port (R: regressions of the 2023 "PHP 8.2 update" commits, L: logic defects, P: PHP 8.2-8.5
-incompatibilities); `#N` is the issue or pull request number in c9s/Pux. L31 was reserved for
-#109 and not assigned: the behavior asked for there already worked.
+port, [docs/defect-registry.md](docs/defect-registry.md) (R: regressions of the 2023 "PHP 8.2
+update" commits, L: logic defects, P: PHP 8.2-8.5 incompatibilities); `#N` is the issue or pull
+request number in c9s/Pux. L31 was reserved for #109 and not assigned: the behavior asked for
+there already worked.
 
 #### Added
 

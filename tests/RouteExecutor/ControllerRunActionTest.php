@@ -20,7 +20,7 @@ final class ControllerRunActionTest extends TestCase
      * Failed before the R3 fix with Error 'Class "Pux\Controller\Exception" not found'
      * (Exception is not imported in namespace Pux\Controller).
      *
-     * @see PLAN-port-php82.md R3
+     * @see docs/defect-registry.md R3
      */
     public function test_run_action_of_missing_action_method_throws_invalid_callback_naming_method(): void
     {
@@ -33,7 +33,7 @@ final class ControllerRunActionTest extends TestCase
     /**
      * Failed before the L7 fix with ArgumentCountError.
      *
-     * @see PLAN-port-php82.md L7
+     * @see docs/defect-registry.md L7
      */
     public function test_run_action_without_var_for_required_parameter_throws_missing_argument_naming_it(): void
     {
@@ -46,7 +46,7 @@ final class ControllerRunActionTest extends TestCase
     /**
      * Failed before the L7 fix with ArgumentCountError.
      *
-     * @see PLAN-port-php82.md L7
+     * @see docs/defect-registry.md L7
      */
     public function test_run_action_binds_var_by_position_when_parameter_name_differs(): void
     {

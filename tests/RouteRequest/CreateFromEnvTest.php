@@ -82,7 +82,7 @@ final class CreateFromEnvTest extends TestCase
      * QUERY_STRING through queryStringMatch. Failed before the L32 fix: the path was
      * "/tools?p=K94rF" (createFromEnv did not strip the query string, fromServer did).
      *
-     * @see PLAN-port-php82.md L32
+     * @see docs/defect-registry.md L32
      */
     public function test_create_from_env_takes_path_of_request_uri_without_query_string(): void
     {

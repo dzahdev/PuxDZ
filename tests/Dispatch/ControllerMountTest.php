@@ -70,7 +70,7 @@ final class ControllerMountTest extends TestCase
      * Failed before the L4 fix: dispatch() did not pass the request to match(), which read the
      * method from the server superglobal.
      *
-     * @see PLAN-port-php82.md L4
+     * @see docs/defect-registry.md L4
      */
     #[DataProvider('annotatedActionRequests')]
     public function test_dispatch_after_mount_of_annotated_controller_honours_method_annotation(
@@ -103,7 +103,7 @@ final class ControllerMountTest extends TestCase
      * Failed before the L4 fix: dispatch() did not pass the request to match(), which read the
      * method from the server superglobal.
      *
-     * @see PLAN-port-php82.md L4
+     * @see docs/defect-registry.md L4
      */
     #[DataProvider('resourceRequests')]
     public function test_dispatch_after_mount_of_restful_controller_selects_action_by_method(

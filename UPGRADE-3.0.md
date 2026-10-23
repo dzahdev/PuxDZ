@@ -3,7 +3,8 @@
 This file lists every incompatible change between the 2.0.x-dev branch of Pux (package
 `corneltek/pux`, commit 30bc692 of 2023-03-28) and PuxDZ 3.0.0. Each entry gives the behavior
 before, the behavior after and what to change in application code. The IDs in parentheses
-(R1-R6, L1-L40, P1-P6) are the defect IDs listed in [CHANGES.md](CHANGES.md).
+(R1-R6, L1-L40, P1-P6) are the defect IDs of
+[docs/defect-registry.md](docs/defect-registry.md), also listed in [CHANGES.md](CHANGES.md).
 
 Order of work for an upgrade:
 

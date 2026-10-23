@@ -18,7 +18,7 @@ final class RequestConstraintTest extends TestCase
      * Failed before the L4 fix: dispatch() did not pass the request to match(), which read the
      * method from the server superglobal.
      *
-     * @see PLAN-port-php82.md L4
+     * @see docs/defect-registry.md L4
      */
     public function test_dispatch_request_with_post_method_returns_post_route(): void
     {
@@ -34,7 +34,7 @@ final class RequestConstraintTest extends TestCase
      * Failed before the L4 fix: dispatch() did not pass the request to match(), which read the
      * method from the server superglobal.
      *
-     * @see PLAN-port-php82.md L4
+     * @see docs/defect-registry.md L4
      */
     public function test_dispatch_with_get_request_returns_get_routes(): void
     {
@@ -53,7 +53,7 @@ final class RequestConstraintTest extends TestCase
      * superglobal has no REQUEST_METHOD, so fromServer throws. Failed before the L4 fix: the
      * constraint was compared with null and the route was skipped.
      *
-     * @see PLAN-port-php82.md L4
+     * @see docs/defect-registry.md L4
      */
     public function test_dispatch_without_request_to_route_with_method_constraint_outside_web_server_throws(): void
     {
@@ -71,8 +71,8 @@ final class RequestConstraintTest extends TestCase
      * the implicitly nullable "RouteRequest $routeRequest = null", PHP 8.4 and 8.5 report a
      * deprecation when Mux is loaded, and the suite fails on it (failOnDeprecation).
      *
-     * @see PLAN-port-php82.md L4
-     * @see PLAN-port-php82.md P1
+     * @see docs/defect-registry.md L4
+     * @see docs/defect-registry.md P1
      */
     public function test_dispatch_without_request_to_route_without_constraint_returns_route(): void
     {
@@ -86,7 +86,7 @@ final class RequestConstraintTest extends TestCase
     /**
      * Failed before the L3 fix: the condition was inverted and read the server superglobal.
      *
-     * @see PLAN-port-php82.md L3
+     * @see docs/defect-registry.md L3
      */
     public function test_dispatch_with_secure_route_rejects_plain_http(): void
     {
@@ -99,7 +99,7 @@ final class RequestConstraintTest extends TestCase
     /**
      * Failed before the L3 fix: the condition was inverted and read the server superglobal.
      *
-     * @see PLAN-port-php82.md L3
+     * @see docs/defect-registry.md L3
      */
     public function test_dispatch_with_secure_route_accepts_https(): void
     {
@@ -112,7 +112,7 @@ final class RequestConstraintTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L3
+     * @see docs/defect-registry.md L3
      */
     public function test_dispatch_with_secure_route_rejects_https_off(): void
     {
@@ -123,7 +123,7 @@ final class RequestConstraintTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L3
+     * @see docs/defect-registry.md L3
      */
     public function test_dispatch_with_secure_false_accepts_plain_http(): void
     {
@@ -136,7 +136,7 @@ final class RequestConstraintTest extends TestCase
     /**
      * Failed before the L11 fix: Mux::match compared the domain with the server superglobal.
      *
-     * @see PLAN-port-php82.md L11
+     * @see docs/defect-registry.md L11
      */
     public function test_dispatch_with_domain_route_accepts_request_for_that_host(): void
     {
@@ -151,7 +151,7 @@ final class RequestConstraintTest extends TestCase
     /**
      * Failed before the L11 fix: Mux::match compared the domain with the server superglobal.
      *
-     * @see PLAN-port-php82.md L11
+     * @see docs/defect-registry.md L11
      */
     public function test_dispatch_with_domain_route_rejects_request_for_other_host(): void
     {
@@ -166,7 +166,7 @@ final class RequestConstraintTest extends TestCase
      * the server superglobal). Stage 4a passes a RouteRequest without HTTP_HOST: without a request
      * argument dispatch builds one with RouteRequest::fromServer(), which throws in the CLI (L4).
      *
-     * @see PLAN-port-php82.md L11
+     * @see docs/defect-registry.md L11
      */
     public function test_dispatch_with_domain_route_and_no_host_returns_null_without_warning(): void
     {

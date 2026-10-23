@@ -67,7 +67,7 @@ final class MatcherTest extends TestCase
      * Failed before the L25 fix with "Call to undefined method matchHost()". The list is compared
      * by host equality (hostEqual), as its docblock "the request host is in the list" says.
      *
-     * @see PLAN-port-php82.md L25
+     * @see docs/defect-registry.md L25
      */
     public function test_is_one_of_hosts_accepts_listed_host_ignoring_case_and_rejects_others(): void
     {
@@ -78,7 +78,7 @@ final class MatcherTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L25
+     * @see docs/defect-registry.md L25
      */
     public function test_is_one_of_hosts_without_host_returns_false(): void
     {
@@ -96,7 +96,7 @@ final class MatcherTest extends TestCase
     /**
      * Failed before the L27 fix: the method returned null.
      *
-     * @see PLAN-port-php82.md L27
+     * @see docs/defect-registry.md L27
      */
     public function test_port_equal_without_server_port_returns_false(): void
     {
@@ -109,7 +109,7 @@ final class MatcherTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L1
+     * @see docs/defect-registry.md L1
      */
     public function test_query_string_match_with_non_matching_regex_returns_false(): void
     {
@@ -119,7 +119,7 @@ final class MatcherTest extends TestCase
     /**
      * Failed before the L26 fix with the warning "Undefined array key QUERY_STRING".
      *
-     * @see PLAN-port-php82.md L26
+     * @see docs/defect-registry.md L26
      */
     public function test_query_string_match_without_query_string_returns_false(): void
     {
@@ -127,7 +127,7 @@ final class MatcherTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L2
+     * @see docs/defect-registry.md L2
      */
     public function test_match_constraints_rejects_alternative_with_one_failing_key(): void
     {
@@ -144,7 +144,7 @@ final class MatcherTest extends TestCase
      * strrpos returned false for the absent suffix, and false == 0 held when the suffix was as
      * long as the path.
      *
-     * @see PLAN-port-php82.md L15
+     * @see docs/defect-registry.md L15
      */
     public function test_path_end_with_absent_suffix_as_long_as_path_returns_false(): void
     {

@@ -69,7 +69,7 @@ final class MountWithoutExpandTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md R1
+     * @see docs/defect-registry.md R1
      */
     public function test_mount_of_closure_with_expand_disabled_dispatches_to_routes_it_added(): void
     {
@@ -88,7 +88,7 @@ final class MountWithoutExpandTest extends TestCase
      * Failed before the L13 fix: dispatch() passed only the rest of the path to the submux and
      * dropped the variables of the mount point.
      *
-     * @see PLAN-port-php82.md L13
+     * @see docs/defect-registry.md L13
      */
     public function test_dispatch_with_expand_disabled_and_pcre_mount_point_keeps_mount_variable(): void
     {
@@ -105,7 +105,7 @@ final class MountWithoutExpandTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L13
+     * @see docs/defect-registry.md L13
      */
     public function test_dispatch_with_expand_disabled_and_variable_clash_keeps_submux_value(): void
     {
@@ -119,7 +119,7 @@ final class MountWithoutExpandTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L13
+     * @see docs/defect-registry.md L13
      */
     public function test_dispatch_with_expand_disabled_and_pcre_mount_point_gives_variable_to_static_submux_route(): void
     {

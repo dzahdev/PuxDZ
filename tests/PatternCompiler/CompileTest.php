@@ -195,7 +195,7 @@ final class CompileTest extends TestCase
      * Failed before the L8 fix: the greedy group expression of the old tokenizer joined both
      * groups into one.
      *
-     * @see PLAN-port-php82.md L8
+     * @see docs/defect-registry.md L8
      */
     public function test_compile_with_two_optional_groups_matches_both_given(): void
     {
@@ -206,7 +206,7 @@ final class CompileTest extends TestCase
      * Failed before the L8 fix: the greedy group expression of the old tokenizer joined both
      * groups into one.
      *
-     * @see PLAN-port-php82.md L8
+     * @see docs/defect-registry.md L8
      */
     public function test_compile_with_two_optional_groups_matches_both_omitted(): void
     {
@@ -217,7 +217,7 @@ final class CompileTest extends TestCase
      * The tokenizer that replaced the greedy group regex tracks parenthesis depth, so an
      * unbalanced group is a syntax error instead of literal text.
      *
-     * @see PLAN-port-php82.md L8
+     * @see docs/defect-registry.md L8
      */
     public function test_compile_with_unclosed_optional_group_throws_pattern_syntax(): void
     {
@@ -228,7 +228,7 @@ final class CompileTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L8
+     * @see docs/defect-registry.md L8
      */
     public function test_compile_with_closing_parenthesis_without_group_throws_pattern_syntax(): void
     {
@@ -241,7 +241,7 @@ final class CompileTest extends TestCase
     /**
      * Failed before the L28 fix: the route compiled, and preg_match on it emitted a warning.
      *
-     * @see PLAN-port-php82.md L28
+     * @see docs/defect-registry.md L28
      */
     public function test_compile_with_require_that_is_not_a_regex_throws_pattern_syntax(): void
     {
@@ -254,7 +254,7 @@ final class CompileTest extends TestCase
     /**
      * Failed before the L9 fix: a colon without a separator character before it was text.
      *
-     * @see PLAN-port-php82.md L9
+     * @see docs/defect-registry.md L9
      */
     public function test_compile_pattern_starting_with_variable_captures_whole_path(): void
     {
@@ -262,7 +262,7 @@ final class CompileTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L9
+     * @see docs/defect-registry.md L9
      */
     public function test_compile_variable_without_separator_neighbours_excludes_slash(): void
     {
@@ -270,7 +270,7 @@ final class CompileTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L9
+     * @see docs/defect-registry.md L9
      */
     public function test_compile_optional_group_starting_with_variable_captures_it(): void
     {
@@ -282,7 +282,7 @@ final class CompileTest extends TestCase
      * space, so "/a b/:id" matched "/ab/1". Paths are matched as given: the caller decodes them
      * first ("/a%20b/1" is not "/a b/1").
      *
-     * @see PLAN-port-php82.md L29
+     * @see docs/defect-registry.md L29
      */
     public function test_compile_space_in_text_rejects_path_without_it(): void
     {
@@ -292,7 +292,7 @@ final class CompileTest extends TestCase
     /**
      * Failed before the L29 fix (the space was dropped from the expression).
      *
-     * @see PLAN-port-php82.md L29
+     * @see docs/defect-registry.md L29
      */
     public function test_compile_space_in_text_matches_path_with_it(): void
     {
@@ -302,7 +302,7 @@ final class CompileTest extends TestCase
     /**
      * Failed before the L29 fix (the space was dropped from the expression).
      *
-     * @see PLAN-port-php82.md L29
+     * @see docs/defect-registry.md L29
      */
     public function test_compile_space_as_variable_separator_is_required_before_variable(): void
     {

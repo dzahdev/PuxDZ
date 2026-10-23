@@ -71,7 +71,7 @@ final class PcreRouteTest extends TestCase
      * required variable follows the group. Failed before the L38 fix: preg_match() reported the
      * group as the empty string, so 'vars' held 'b' => ''.
      *
-     * @see PLAN-port-php82.md L38
+     * @see docs/defect-registry.md L38
      */
     public function test_dispatch_with_omitted_optional_group_before_variable_leaves_its_variable_out_of_vars(): void
     {
@@ -89,7 +89,7 @@ final class PcreRouteTest extends TestCase
      * route was skipped, so dispatch() returned null as for a path that matches no route.
      * pcre.jit is turned off because the JIT does not apply pcre.backtrack_limit.
      *
-     * @see PLAN-port-php82.md L37
+     * @see docs/defect-registry.md L37
      */
     public function test_dispatch_pcre_route_failing_at_match_time_throws_pattern_syntax(): void
     {

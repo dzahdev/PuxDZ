@@ -18,7 +18,7 @@
 
     <!--
         Red tests are kept in the group known-defect and excluded here, so that `composer test` is
-        green: each fails because of a defect in the registry of PLAN-port-php82.md (ID in the
+        green: each fails because of a defect in the registry docs/defect-registry.md (ID in the
         docblock). `composer test:red` runs only this group, `composer test:all` runs everything.
     -->
     <groups>

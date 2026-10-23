@@ -3,8 +3,9 @@
 Observations from a probe script run on PHP 8.3.6 against upstream HEAD 30bc692 (with the
 third-party packages of that commit installed), recorded during the analysis for the PHP 8.2
 port. Each row is a starting point for one red -> green cycle; registry IDs refer to the defect
-registry of the port plan. "Test" names the Stage 2 test that already specifies the row, if any;
-a probe without a test becomes a red test at the start of its own cycle (ADR 0002).
+registry [defect-registry.md](defect-registry.md). "Test" names the Stage 2 test that already
+specifies the row, if any; a probe without a test becomes a red test at the start of its own
+cycle (ADR 0002).
 
 Between Stage 0 and Stage 1 the third-party packages were gone and every call that loaded
 `Pux\RouteRequest` or `Pux\Controller\Controller` failed earlier with a class-not-found error.
@@ -18,8 +19,8 @@ Stage 3: R1 (probe B), R2 (probe H), R4 (probe O), R5 (probe P), R6 (probe L). C
 Stage 4a: L3 (probe D), L4 (probe E and the CLI row below), L8 (probe I), L9 (probe N), L10
 (probe C), L11 (probe Q), L13 (probe T), L24 (probe J and the static route row below). Closed in
 Stage 4b: L5 (probe F), L6 (probe K), L7 (probe M), L14 (probe U). Closed in Stage 5: P3 (probe
-S). Defects found after the probes (L15-L37 except L31) are listed with their tests in
-`CHANGES.md` (section 3.0.0).
+S). Defects found after the probes (L15-L40 except L31) are listed with their tests and
+commits in [defect-registry.md](defect-registry.md).
 
 | Probe | Seam | Input | Observed at 30bc692 | Expected | ID | Test | Commit |
 |---|---|---|---|---|---|---|---|

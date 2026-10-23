@@ -64,7 +64,7 @@ final class ExportRoundTripTest extends TestCase
      * references": mount() stored the submux object, whose parent is the exporting Mux, in the
      * route options.
      *
-     * @see PLAN-port-php82.md L10
+     * @see docs/defect-registry.md L10
      */
     public function test_export_after_mount_yields_mux_dispatching_mounted_route_without_warning(): void
     {
@@ -77,7 +77,7 @@ final class ExportRoundTripTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L10
+     * @see docs/defect-registry.md L10
      */
     public function test_export_after_mount_without_expand_yields_mux_dispatching_submux_route(): void
     {
@@ -97,7 +97,7 @@ final class ExportRoundTripTest extends TestCase
      * Route options hold no objects (invariant 3): mount() no longer stores the submux in the
      * 'mux' option of the routes it adds.
      *
-     * @see PLAN-port-php82.md L10
+     * @see docs/defect-registry.md L10
      */
     public function test_dispatch_after_mount_returns_route_without_submux_object_in_options(): void
     {

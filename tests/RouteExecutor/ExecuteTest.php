@@ -96,7 +96,7 @@ final class ExecuteTest extends TestCase
     /**
      * Failed before the L6 fix with ArgumentCountError: a default that is falsy ('0') was not bound.
      *
-     * @see PLAN-port-php82.md L6
+     * @see docs/defect-registry.md L6
      */
     public function test_execute_uses_falsy_route_default_when_optional_variable_is_absent(): void
     {
@@ -111,7 +111,7 @@ final class ExecuteTest extends TestCase
      * also when a required variable follows the group. Failed before the L38 fix with
      * "b= c=1": the absent group was bound as the empty string.
      *
-     * @see PLAN-port-php82.md L38
+     * @see docs/defect-registry.md L38
      */
     public function test_execute_uses_route_default_for_omitted_optional_group_before_required_variable(): void
     {
@@ -125,7 +125,7 @@ final class ExecuteTest extends TestCase
      * Upstream issue #112. Failed before the L7 fix with ArgumentCountError: binding was by
      * name only.
      *
-     * @see PLAN-port-php82.md L7
+     * @see docs/defect-registry.md L7
      */
     public function test_execute_binds_variables_by_position_when_parameter_names_differ(): void
     {
@@ -139,7 +139,7 @@ final class ExecuteTest extends TestCase
      * Binding by name comes first: $param2 takes its variable by name, $a takes the remaining
      * named variable param1 by position. Failed before the L7 fix with ArgumentCountError.
      *
-     * @see PLAN-port-php82.md L7
+     * @see docs/defect-registry.md L7
      */
     public function test_execute_binds_variable_left_after_name_binding_to_remaining_parameter(): void
     {
@@ -152,7 +152,7 @@ final class ExecuteTest extends TestCase
     /**
      * Failed before the L7 fix with ArgumentCountError.
      *
-     * @see PLAN-port-php82.md L7
+     * @see docs/defect-registry.md L7
      */
     public function test_execute_without_value_for_required_parameter_throws_missing_argument_naming_parameter_and_callback(): void
     {
@@ -169,7 +169,7 @@ final class ExecuteTest extends TestCase
      * A required parameter that allows null is still required: it is not filled with null.
      * Failed before the L7 fix with ArgumentCountError.
      *
-     * @see PLAN-port-php82.md L7
+     * @see docs/defect-registry.md L7
      */
     public function test_execute_without_value_for_required_nullable_parameter_throws_missing_argument(): void
     {
@@ -185,7 +185,7 @@ final class ExecuteTest extends TestCase
     /**
      * Failed before the L5 fix with Error "Cannot use object of type Closure as array".
      *
-     * @see PLAN-port-php82.md L5
+     * @see docs/defect-registry.md L5
      */
     public function test_execute_closure_callback_returns_its_result(): void
     {
@@ -198,7 +198,7 @@ final class ExecuteTest extends TestCase
     /**
      * Failed before the L5 fix with ReflectionException 'Class "s" does not exist' (the first character of the name was taken as a class).
      *
-     * @see PLAN-port-php82.md L5
+     * @see docs/defect-registry.md L5
      */
     public function test_execute_function_name_callback_binds_route_variable(): void
     {
@@ -211,7 +211,7 @@ final class ExecuteTest extends TestCase
     /**
      * Passed before the L5 fix as well; specifies the [object, method] form next to the others.
      *
-     * @see PLAN-port-php82.md L5
+     * @see docs/defect-registry.md L5
      */
     public function test_execute_object_and_method_callback_calls_method_of_given_object(): void
     {
@@ -224,7 +224,7 @@ final class ExecuteTest extends TestCase
     /**
      * Failed before the L5 fix with Error "Cannot use object of type PrefixedAction as array".
      *
-     * @see PLAN-port-php82.md L5
+     * @see docs/defect-registry.md L5
      */
     public function test_execute_invokable_object_callback_calls_its_invoke_method(): void
     {
@@ -237,7 +237,7 @@ final class ExecuteTest extends TestCase
     /**
      * Failed before the L5 fix with ReflectionException instead of InvalidCallback.
      *
-     * @see PLAN-port-php82.md L5
+     * @see docs/defect-registry.md L5
      */
     public function test_execute_unknown_function_name_callback_throws_invalid_callback_naming_it(): void
     {

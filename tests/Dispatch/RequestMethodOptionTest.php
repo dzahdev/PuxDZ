@@ -13,7 +13,7 @@ use Pux\RouteRequest;
  * The 'method' route option accepts a Pux\RequestMethod case, a method name in any case or the
  * integer value of a case (the deprecated REQUEST_METHOD_* constants hold these values).
  *
- * @see PLAN-port-php82.md L23
+ * @see docs/defect-registry.md L23
  */
 final class RequestMethodOptionTest extends TestCase
 {

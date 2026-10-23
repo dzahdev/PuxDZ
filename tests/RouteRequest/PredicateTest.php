@@ -26,7 +26,7 @@ final class PredicateTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L1
+     * @see docs/defect-registry.md L1
      */
     public function test_path_like_with_text_absent_from_path_returns_false(): void
     {
@@ -34,7 +34,7 @@ final class PredicateTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L1
+     * @see docs/defect-registry.md L1
      */
     public function test_path_match_with_non_matching_regex_returns_false(): void
     {
@@ -42,7 +42,7 @@ final class PredicateTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L1
+     * @see docs/defect-registry.md L1
      */
     public function test_host_match_with_non_matching_regex_returns_false(): void
     {
@@ -82,7 +82,7 @@ final class PredicateTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L2
+     * @see docs/defect-registry.md L2
      */
     public function test_match_constraints_with_only_non_matching_alternative_returns_false(): void
     {
@@ -95,7 +95,7 @@ final class PredicateTest extends TestCase
      * Failed before the L12 fix with 5 warnings "Undefined array key" for _REQUEST, _GET, _POST,
      * _COOKIE and _SESSION.
      *
-     * @see PLAN-port-php82.md L12
+     * @see docs/defect-registry.md L12
      */
     public function test_create_from_env_without_superglobal_keys_reads_path_and_method(): void
     {

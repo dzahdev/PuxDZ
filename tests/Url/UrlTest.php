@@ -47,7 +47,7 @@ final class UrlTest extends TestCase
     /**
      * Failed before the L24 fix with the warning "Undefined array key pattern" and the result ''.
      *
-     * @see PLAN-port-php82.md L24
+     * @see docs/defect-registry.md L24
      */
     public function test_url_of_static_named_route_returns_its_path(): void
     {
@@ -58,7 +58,7 @@ final class UrlTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md L24
+     * @see docs/defect-registry.md L24
      */
     public function test_url_of_unknown_route_id_throws_naming_it(): void
     {
@@ -73,7 +73,7 @@ final class UrlTest extends TestCase
      * code that caught the 2.x exception keeps working. Failed before the L40 fix: url() threw
      * a plain \RuntimeException.
      *
-     * @see PLAN-port-php82.md L40
+     * @see docs/defect-registry.md L40
      */
     public function test_url_of_unknown_route_id_throws_route_not_found_with_that_id(): void
     {
@@ -91,7 +91,7 @@ final class UrlTest extends TestCase
     /**
      * Values are inserted as given; encoding them is the caller's job.
      *
-     * @see PLAN-port-php82.md L24
+     * @see docs/defect-registry.md L24
      */
     public function test_url_inserts_values_without_encoding(): void
     {

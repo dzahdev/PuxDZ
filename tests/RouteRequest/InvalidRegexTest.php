@@ -14,7 +14,7 @@ use Pux\RouteRequest;
  *
  * Failed before the L28 fix: preg_match emitted a warning and the predicate returned false.
  *
- * @see PLAN-port-php82.md L28
+ * @see docs/defect-registry.md L28
  */
 final class InvalidRegexTest extends TestCase
 {
@@ -46,7 +46,7 @@ final class InvalidRegexTest extends TestCase
      * Failed before the L30 fix: without the server key the predicate returned false before it
      * compiled the expression.
      *
-     * @see PLAN-port-php82.md L30
+     * @see docs/defect-registry.md L30
      */
     public function test_host_match_without_host_and_with_invalid_regex_throws_pattern_syntax(): void
     {
@@ -60,7 +60,7 @@ final class InvalidRegexTest extends TestCase
      * Failed before the L30 fix: without the server key the predicate returned false before it
      * compiled the expression.
      *
-     * @see PLAN-port-php82.md L30
+     * @see docs/defect-registry.md L30
      */
     public function test_query_string_match_without_query_string_and_with_invalid_regex_throws_pattern_syntax(): void
     {

@@ -109,7 +109,7 @@ final class MountTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md R1
+     * @see docs/defect-registry.md R1
      */
     public function test_mount_of_closure_that_fills_given_mux_adds_its_routes(): void
     {
@@ -125,7 +125,7 @@ final class MountTest extends TestCase
     }
 
     /**
-     * @see PLAN-port-php82.md R1
+     * @see docs/defect-registry.md R1
      */
     public function test_mount_of_closure_that_returns_new_mux_adds_routes_of_returned_mux(): void
     {
