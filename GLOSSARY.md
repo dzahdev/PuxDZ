@@ -76,7 +76,7 @@ The signature accepts `Mux|Expandable|Closure|callable` (defect R1, closed in St
 
 ## Submux
 
-A `Mux` attached to a parent through `mount()`. `mount()` calls `$submux->setParent($parent)`.
+A `Mux` attached to a parent through `mount()`; the submux holds no link to its parent.
 With `expand = false` the parent stores it in `Mux::$submux[$id]` and adds a route whose
 callback is the integer id; `Mux::dispatch()` then strips the matched prefix from the path and
 calls `$submux->dispatch()` with the remainder and the same `RouteRequest`. The named variables
