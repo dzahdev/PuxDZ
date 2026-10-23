@@ -33,6 +33,10 @@ final class FromServerTest extends TestCase
         self::assertSame('/search', $request->getPath());
     }
 
+    /**
+     * Upstream issue #89: the HTTP_* keys (and CONTENT_TYPE, CONTENT_LENGTH) of the server array
+     * are the header fields.
+     */
     public function test_from_server_derives_headers_from_http_and_content_keys(): void
     {
         $request = RouteRequest::fromServer([

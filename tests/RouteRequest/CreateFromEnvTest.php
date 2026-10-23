@@ -59,6 +59,10 @@ final class CreateFromEnvTest extends TestCase
         self::assertSame([], $request->queryParameters);
     }
 
+    /**
+     * Upstream issue #89: the HTTP_* keys (and CONTENT_TYPE, CONTENT_LENGTH) of the server array
+     * are the header fields.
+     */
     public function test_create_derives_headers_from_http_and_content_keys(): void
     {
         $request = RouteRequest::create('POST', '/', [

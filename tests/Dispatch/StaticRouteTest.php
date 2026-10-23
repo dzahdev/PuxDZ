@@ -23,6 +23,9 @@ final class StaticRouteTest extends TestCase
         );
     }
 
+    /**
+     * Upstream issue #49: the route "/" matches the path "/".
+     */
     public function test_dispatch_root_path_returns_root_route(): void
     {
         $mux = new Mux();
@@ -31,6 +34,10 @@ final class StaticRouteTest extends TestCase
         self::assertSame([false, '/', ['HelloController', 'index'], []], $mux->dispatch('/'));
     }
 
+    /**
+     * Upstream issue #30: a static route matches its whole path, not a prefix of it ("/product"
+     * does not match "/products").
+     */
     public function test_dispatch_unknown_path_returns_null(): void
     {
         $mux = new Mux();

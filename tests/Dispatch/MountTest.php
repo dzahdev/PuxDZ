@@ -64,6 +64,10 @@ final class MountTest extends TestCase
         self::assertNull($mux->dispatch('/foo'));
     }
 
+    /**
+     * Upstream PR #64: a static submux route mounted under a pattern with variables becomes a
+     * PCRE route and keeps the mount variable.
+     */
     public function test_dispatch_after_mount_at_pcre_path_returns_static_sub_route_with_mount_variable(): void
     {
         $sub = new Mux();
@@ -106,6 +110,28 @@ final class MountTest extends TestCase
         self::assertFalse($static[0]);
         self::assertSame('/sub/foo', $static[1]);
         self::assertSame(['suffix' => 'csv'], $static[3]['default']);
+    }
+
+    /**
+     * Upstream PR #69: the options of mount() are merged recursively with the options of each
+     * submux route, the route value winning on a clash, so 'default' and 'require' can be set
+     * for a whole mount.
+     */
+    public function test_dispatch_after_mount_with_options_merges_them_recursively_into_submux_route_options(): void
+    {
+        $sub = new Mux();
+        $sub->any('/block/:hash', ['FooController', 'index'], ['default' => ['format' => 'html']]);
+        $mux = new Mux();
+
+        $mux->mount('/v1/:network', $sub, [
+            'default' => ['format' => 'json', 'network' => 'main'],
+            'require' => ['network' => '[a-z]+'],
+        ]);
+        $route = $mux->dispatch('/v1/test/block/ab12');
+
+        self::assertSame(['format' => 'html', 'network' => 'main'], $route[3]['default']);
+        self::assertSame('test', $route[3]['vars']['network']);
+        self::assertNull($mux->dispatch('/v1/123/block/ab12'));
     }
 
     /**

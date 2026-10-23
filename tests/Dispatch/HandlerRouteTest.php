@@ -27,6 +27,9 @@ final class HandlerRouteTest extends TestCase
         self::assertSame($handler, $route[2]);
     }
 
+    /**
+     * Upstream issue #30: only a mount point (submux, Mux or Handler) matches a path prefix.
+     */
     public function test_dispatch_of_static_route_with_non_handler_object_requires_exact_path(): void
     {
         $mux = new Mux();
