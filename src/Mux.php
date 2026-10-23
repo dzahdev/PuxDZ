@@ -146,10 +146,9 @@ class Mux implements IteratorAggregate
             $mux($mux = new self());
         }
 
-        // Save the constructed mux object in options array, so we can fetch
-        // the expanded mux object in controller object later.
+        // Route options hold no objects (they are exported): the submux is kept in
+        // $this->submux, an expanded controller keeps its own Mux (ExpandableController::getMux()).
         $mux->setParent($this);
-        $options['mux'] = $mux;
 
 
         if ($this->expand) {
@@ -477,9 +476,29 @@ class Mux implements IteratorAggregate
         $this->routes = $routes;
     }
 
+    /**
+     * PHP code that rebuilds this Mux through __set_state(): the keys id, routes, routesById and
+     * submux, each submux exported the same way. The parent link is not exported, so a mounted
+     * Mux exports without a circular reference. Routes are exported with var_export, so their
+     * callbacks must be exportable (strings and arrays of strings, not closures).
+     *
+     * @return string
+     */
     public function export()
     {
-        return var_export($this, true);
+        $submux = '';
+        foreach ($this->submux as $id => $mux) {
+            $submux .= sprintf("    %s => %s,\n", var_export($id, true), $mux->export());
+        }
+
+        return sprintf(
+            "\\%s::__set_state([\n'id' => %s,\n'routes' => %s,\n'routesById' => %s,\n'submux' => [\n%s],\n])",
+            self::class,
+            var_export($this->id, true),
+            var_export($this->routes, true),
+            var_export($this->routesById, true),
+            $submux,
+        );
     }
 
     /**
