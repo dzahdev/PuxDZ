@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pux\Builder;
 
 use ReflectionClass;
@@ -14,14 +16,17 @@ use Pux\RequestMethod;
  * Without the attribute, the docblock annotations @Route("/path") and @Method("GET") are read;
  * they are deprecated since 3.0 (see parseDocblockAnnotations()). When a method has the
  * attribute, its docblock is not read.
+ *
+ * @phpstan-type Annotations array{Route?: string, Method?: string}
  */
-class ControllerRouteBuilder
+final class ControllerRouteBuilder
 {
     /**
      * @param ReflectionMethod $reflectionMethod action method
-     * @return array Annotation info: 'Route' (path) and 'Method' (request method name), each optional
+     *
+     * @return Annotations 'Route' (path) and 'Method' (request method name), each optional
      */
-    protected static function parseMethodAnnotation(ReflectionMethod $reflectionMethod)
+    private static function parseMethodAnnotation(ReflectionMethod $reflectionMethod): array
     {
         $attributes = $reflectionMethod->getAttributes(Route::class);
         if ($attributes !== []) {
@@ -41,17 +46,18 @@ class ControllerRouteBuilder
      * @deprecated since 3.0, use the attribute #[Pux\Attribute\Route] on the action; the
      *             docblock annotations are removed in 4.0
      *
-     * @return array Annotation info: 'Route' (path) and 'Method' (request method name), each optional
+     * @return Annotations 'Route' (path) and 'Method' (request method name), each optional
      */
-    private static function parseDocblockAnnotations(ReflectionMethod $reflectionMethod)
+    private static function parseDocblockAnnotations(ReflectionMethod $reflectionMethod): array
     {
         $annotations = [];
-        if ($docComment = $reflectionMethod->getDocComment()) {
-            if (preg_match('/^[\s*]*\@Method\("(get|put|post|delete|head|patch|options)"\)/im', (string) $docComment, $regs)) {
+        $docComment = $reflectionMethod->getDocComment();
+        if ($docComment !== false) {
+            if (preg_match('/^[\s*]*\@Method\("(get|put|post|delete|head|patch|options)"\)/im', $docComment, $regs)) {
                 $annotations['Method'] = $regs[1];
             }
 
-            if (preg_match('/^[\s*]*\@Route\("([^\s]*)"\)/im', (string) $docComment, $regs)) {
+            if (preg_match('/^[\s*]*\@Route\("([^\s]*)"\)/im', $docComment, $regs)) {
                 $annotations['Route'] = $regs[1];
             }
         }
@@ -66,16 +72,19 @@ class ControllerRouteBuilder
      * Should always keep it returns simple array, so that we can cache the
      * data in somewhere...
      *
-     * @return array
+     * @param object|class-string $con controller object or class name
+     *
+     * @return array<string, array{Annotations, array{class: class-string}}> action method name =>
+     *         [annotations, ['class' => declaring class]]; an override without annotations keeps
+     *         the annotations of the parent method
      */
-    public static function parseActionMethods($con)
+    public static function parseActionMethods(object|string $con): array
     {
         $reflectionClass = new ReflectionClass($con);
         $methodMap = [];
 
         // build up parent class list
-        $parentClasses = [];
-        $parentClasses[] = $reflectionClass;
+        $parentClasses = [$reflectionClass];
         $parentClassRef = $reflectionClass;
         while ($parent = $parentClassRef->getParentClass()) {
             $parentClasses[] = $parent;
@@ -85,32 +94,25 @@ class ControllerRouteBuilder
         // iterate methods from parent class actions
         foreach (array_reverse($parentClasses) as $class) {
             foreach ($class->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+                $name = $method->getName();
 
                 // Ignore class methods that doesn't have Action in suffix
-                if (!preg_match('/Action$/', $method->getName())) {
+                if (!str_ends_with($name, 'Action') || in_array($name, ['runAction', 'hasAction'], true)) {
                     continue;
                 }
 
-                if (in_array($method->getName(), [ 'runAction', 'hasAction' ])) {
-                    continue;
-                }
-
-                $meta = ['class' => $class->getName()];
                 $annotations = self::parseMethodAnnotation($method);
 
                 // If it's empty, then fetch annotations from parent methods
-                if (empty($annotations)) {
-                    if (isset($methodMap[$method->getName()])) {
-                        $annotations = $methodMap[$method->getName()][0];
-                    }
+                if ($annotations === [] && isset($methodMap[$name])) {
+                    $annotations = $methodMap[$name][0];
                 }
 
                 // always update method Map
-                $methodMap[$method->getName()] = [$annotations, $meta];
+                $methodMap[$name] = [$annotations, ['class' => $class->getName()]];
             }
         }
 
-        // TODO: see if we can cache it.
         return $methodMap;
     }
 
@@ -121,47 +123,36 @@ class ControllerRouteBuilder
      *
      *      pageUpdateAction => /page/update
      *      fooAction => /foo
-     *
-     * @return string path
      */
-    protected static function translatePath($methodName)
+    private static function translatePath(string $methodName): string
     {
-        $methodName = preg_replace('/Action$/', '', (string) $methodName);
-        return '/'.preg_replace_callback('/[A-Z]/', static fn($matches) => '/'.strtolower($matches[0]), $methodName);
+        if (str_ends_with($methodName, 'Action')) {
+            $methodName = substr($methodName, 0, -strlen('Action'));
+        }
+
+        return '/' . preg_replace_callback('/[A-Z]/', static fn (array $matches): string => '/' . strtolower($matches[0]), $methodName);
     }
 
     /**
      * Return [["/path", "testAction", [ "method" => ... ] ],...].
      *
-     * @return array returns routes array
+     * @param object|class-string $controller controller object or class name
+     *
+     * @return list<array{string, string, array{method?: int}}> one route per action: path,
+     *         action method name, options
      */
-    public static function build($controller)
+    public static function build(object|string $controller): array
     {
         $routes = [];
-        $actions = self::parseActionMethods($controller);
 
-        foreach ($actions as $actionName => $actionInfo) {
-            [$annotations, $meta] = $actionInfo;
+        foreach (self::parseActionMethods($controller) as $actionName => [$annotations]) {
+            $path = $annotations['Route'] ?? ($actionName === 'indexAction' ? '' : self::translatePath($actionName));
 
-            if (isset($annotations['Route'])) {
-                $path = $annotations['Route'];
-            } else {
-                if ($actionName === 'indexAction') {
-                    $path = '';
-                } else {
-                    $path = self::translatePath($actionName); // '/' . preg_replace_callback('/[A-Z]/', function($matches) {
-                }
-            }
-
-            $route = [$path, $actionName];
-
-            if (isset($annotations['Method'])) {
-                $route[] = ['method' => RequestMethod::fromName($annotations['Method'])->value];
-            } else {
-                $route[] = [];
-            }
-
-            $routes[] = $route;
+            $routes[] = [
+                $path,
+                $actionName,
+                isset($annotations['Method']) ? ['method' => RequestMethod::fromName($annotations['Method'])->value] : [],
+            ];
         }
 
         return $routes;
