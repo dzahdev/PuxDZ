@@ -20,4 +20,31 @@ final class InvalidCallback extends LogicException implements PuxException
     {
         return new self(sprintf('Method %s not found in controller %s.', $method, $class));
     }
+
+    /**
+     * @param mixed $callback
+     */
+    public static function notCallable($callback): self
+    {
+        return new self(sprintf('Route callback %s is not callable.', self::describe($callback)));
+    }
+
+    /**
+     * @param mixed $callback
+     */
+    private static function describe($callback): string
+    {
+        if (is_string($callback)) {
+            return $callback;
+        }
+
+        if (is_array($callback)) {
+            return '[' . implode(', ', array_map(
+                static fn ($part): string => is_string($part) ? $part : get_debug_type($part),
+                $callback,
+            )) . ']';
+        }
+
+        return get_debug_type($callback);
+    }
 }

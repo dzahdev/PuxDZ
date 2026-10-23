@@ -6,9 +6,11 @@ use CRUDProductController;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
+use Pux\Exception\InvalidCallback;
 use Pux\Mux;
 use Pux\RouteExecutor;
 use Pux\Tests\Fixtures\ArgumentBindingController;
+use Pux\Tests\Fixtures\PrefixedAction;
 
 /**
  * RouteExecutor::execute runs the callback of a dispatched route and binds route variables
@@ -116,15 +118,71 @@ final class ExecuteTest extends TestCase
     }
 
     /**
+     * Failed before the L5 fix with Error "Cannot use object of type Closure as array".
+     *
      * @see PLAN-port-php82.md L5
      */
-    #[Group('known-defect')]
     public function test_execute_closure_callback_returns_its_result(): void
     {
         $mux = new Mux();
         $mux->any('/c/:id', static fn ($id) => "closure $id");
 
         self::assertSame('closure 5', self::executeDispatched($mux, '/c/5'));
+    }
+
+    /**
+     * Failed before the L5 fix with ReflectionException 'Class "s" does not exist' (the first character of the name was taken as a class).
+     *
+     * @see PLAN-port-php82.md L5
+     */
+    public function test_execute_function_name_callback_binds_route_variable(): void
+    {
+        $mux = new Mux();
+        $mux->any('/upper/:string', 'strtoupper');
+
+        self::assertSame('ABC', self::executeDispatched($mux, '/upper/abc'));
+    }
+
+    /**
+     * Passed before the L5 fix as well; specifies the [object, method] form next to the others.
+     *
+     * @see PLAN-port-php82.md L5
+     */
+    public function test_execute_object_and_method_callback_calls_method_of_given_object(): void
+    {
+        $mux = new Mux();
+        $mux->any('/d/:id', [new PrefixedAction('given'), 'describe']);
+
+        self::assertSame('given described 7', self::executeDispatched($mux, '/d/7'));
+    }
+
+    /**
+     * Failed before the L5 fix with Error "Cannot use object of type PrefixedAction as array".
+     *
+     * @see PLAN-port-php82.md L5
+     */
+    public function test_execute_invokable_object_callback_calls_its_invoke_method(): void
+    {
+        $mux = new Mux();
+        $mux->any('/i/:id', new PrefixedAction('given'));
+
+        self::assertSame('given invoked 7', self::executeDispatched($mux, '/i/7'));
+    }
+
+    /**
+     * Failed before the L5 fix with ReflectionException instead of InvalidCallback.
+     *
+     * @see PLAN-port-php82.md L5
+     */
+    public function test_execute_unknown_function_name_callback_throws_invalid_callback_naming_it(): void
+    {
+        $mux = new Mux();
+        $mux->any('/n', 'pux_no_such_function');
+
+        $this->expectException(InvalidCallback::class);
+        $this->expectExceptionMessage('pux_no_such_function');
+
+        self::executeDispatched($mux, '/n');
     }
 
     public function test_execute_controller_json_action_returns_json_response_triple(): void
