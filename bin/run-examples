@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Runs every eg/*.php and fails when one exits non-zero or writes to stderr (PHP warnings,
+# notices and deprecations are reported on stderr with error_reporting=-1).
+#
+#   bin/run-examples                          in docker, image php:8.3-cli
+#   PHP_IMAGE=php:8.2-cli bin/run-examples    in docker, another PHP version
+#   bin/run-examples --native                 with the php binary in PATH (CI)
+#
+# vendor/ must exist (composer install).
+set -euo pipefail
+
+script_dir="$(dirname -- "${BASH_SOURCE[0]}")"
+project_root="$(cd -- "$script_dir/.." && pwd)"
+
+if [ ! -f "$project_root/vendor/autoload.php" ]; then
+    echo "bin/run-examples: $project_root/vendor/autoload.php not found; run composer install first" >&2
+    exit 1
+fi
+
+php_flags=(-d error_reporting=-1 -d display_errors=stderr -d log_errors=0)
+
+if [ "${1:-}" = "--native" ]; then
+    run_php() { (cd "$project_root" && php "${php_flags[@]}" "$@"); }
+else
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "bin/run-examples: docker is not installed or not in PATH; use --native" >&2
+        exit 127
+    fi
+    image="${PHP_IMAGE:-php:8.3-cli}"
+    run_php() {
+        docker run --rm -u "$(id -u):$(id -g)" -v "$project_root":/app -w /app "$image" php "${php_flags[@]}" "$@"
+    }
+fi
+
+stderr_file="$(mktemp)"
+trap 'rm -f "$stderr_file"' EXIT
+
+failed=0
+for example in "$project_root"/eg/*.php; do
+    name="eg/$(basename -- "$example")"
+    if ! run_php "$name" >/dev/null 2>"$stderr_file"; then
+        echo "FAIL $name: non-zero exit" >&2
+        cat "$stderr_file" >&2
+        failed=1
+    elif [ -s "$stderr_file" ]; then
+        echo "FAIL $name: output on stderr" >&2
+        cat "$stderr_file" >&2
+        failed=1
+    else
+        echo "ok   $name"
+    fi
+done
+
+exit "$failed"

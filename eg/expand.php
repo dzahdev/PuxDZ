@@ -1,34 +1,51 @@
 <?php
 
-require '../vendor/autoload.php';
+declare(strict_types=1);
 
+/*
+ * Controller expansion: mount() turns the public *Action methods of an ExpandableController
+ * into routes under the mount path. The path comes from the #[Route] attribute, else from the
+ * method name (helloAction is /hello, indexAction is the mount path itself).
+ *
+ *     php eg/expand.php              prints the responses of /my, /my/hello and /my/foo
+ *     php eg/expand.php /my/hello    prints the response of /my/hello
+ */
+
+namespace Pux\Examples;
+
+use Pux\Attribute\Route;
 use Pux\Controller\ExpandableController;
-use Pux\RouteExecutor;
 use Pux\Mux;
-use Pux\Router;
+use Pux\RequestMethod;
+use Pux\RouteExecutor;
+use Pux\RouteRequest;
 
-class MyController extends Controller {
-    public function indexAction() {
-        return 'MyController::indexAction()!';
+require __DIR__ . '/../vendor/autoload.php';
+
+final class MyController extends ExpandableController
+{
+    public function indexAction(): string
+    {
+        return 'MyController::indexAction()';
     }
 
-    public function helloAction() {
-        return 'MyController::helloAction()!';
+    public function helloAction(): string
+    {
+        return 'MyController::helloAction()';
     }
 
-    /**
-     * @uri /foo
-     */
-    public function overrideAction() {
-        return 'MyController::overrideAction(), NOT MyController::fooAction()!';
+    #[Route('/foo', method: RequestMethod::GET)]
+    public function overrideAction(): string
+    {
+        return 'MyController::overrideAction() at /foo';
     }
 }
 
-
-$controller = new MyController();
-
 $mux = new Mux();
-$mux->mount('/', $controller->expand());
+$mux->mount('/my', new MyController());
 
-$route = $mux->dispatch($_SERVER['REQUEST_URI']);
-printf("Response: %s\n", RouteExecutor::execute($route));
+$paths = isset($argv[1]) ? [$argv[1]] : ['/my', '/my/hello', '/my/foo'];
+foreach ($paths as $path) {
+    $route = $mux->dispatch($path, new RouteRequest('GET', $path));
+    printf("%s => %s\n", $path, $route === null ? '404' : RouteExecutor::execute($route));
+}

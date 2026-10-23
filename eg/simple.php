@@ -1,57 +1,46 @@
 <?php
-require '../vendor/autoload.php';
-use Pux\Router;
-use Pux\Mux;
 
-
+declare(strict_types=1);
 
 /*
-    return [
-        '/' => [
-            [ '{pattern}', {callback}, {options} ],
-            [ '{pattern}', {callback}, {options} ],
-            [ '{pattern}', {callback}, {options} ],
-            [ '{pattern}', {callback}, {options} ],
-            [ '{pattern}', {callback}, {options} ],
-            [ '{pattern}', {callback}, {options} ],
-
-            // dispatch this pattern to submux1
-            [ '{pattern}', 'submux1', {options} ],
-        ],
-        'submux1' => [
-            // pattern for sub path.
-            [ '{pattern}', {callback}, {options} ],
-
-        ],
-    ];
+ * PCRE routes with a 'require' expression and a 'default' value; the route variable is
+ * converted to the int parameter of the action.
+ *
+ *     php eg/simple.php   prints "product list", "product 7" and "product 1"
  */
 
-class ProductController {
-    public function listAction() {
+namespace Pux\Examples;
+
+use Pux\Mux;
+use Pux\RouteExecutor;
+use Pux\RouteRequest;
+
+require __DIR__ . '/../vendor/autoload.php';
+
+final class ProductController
+{
+    public function listAction(): string
+    {
         return 'product list';
     }
-    public function itemAction($id) { 
+
+    public function itemAction(int $id): string
+    {
         return "product $id";
     }
 }
 
-$router = new Router([ 'cache_file' => 'mux.php' ]);
+$mux = new Mux();
+$mux->get('/product', [ProductController::class, 'listAction']);
+$mux->get('/product/item(/:id)', [ProductController::class, 'itemAction'], [
+    'require' => ['id' => '\d+'],
+    'default' => ['id' => '1'],
+]);
 
-if ( false === $router->load() ) {
-    // dispatch /page to hello action
-    $router->add('/product', ['ProductController','listAction']);
-    $router->add('/product/:id', ['ProductController','itemAction'] , [
-        'require' => [ ':id' => '\d+', ],
-        'default' => [ ':id' => '1', ]
-    ]);
-
-    /* 
-    * route ProductController:index to  /product
-    * route ProductController:item to  /product/item
-    * route ProductController:list to  /product/list
-    * */
-    // $router->mount('/product', 'ProductController');
-    $router->save();
+foreach (['/product', '/product/item/7', '/product/item'] as $path) {
+    $route = $mux->dispatch($path, new RouteRequest('GET', $path));
+    if ($route === null) {
+        throw new \UnexpectedValueException("No route for $path.");
+    }
+    echo RouteExecutor::execute($route), "\n";
 }
-$r = $router->dispatch('/product/1');
-var_dump( $r ); 
