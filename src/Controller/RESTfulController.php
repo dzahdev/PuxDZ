@@ -72,54 +72,73 @@ abstract class RESTfulController extends ExpandableController
     }
 
 
+    /**
+     * Sets the HTTP response status code through http_response_code().
+     *
+     * @deprecated since 3.0, return the response array [code, headers, body] from the action
+     *             instead; removed in 4.0
+     *
+     * @param int $code HTTP status code
+     */
     public function code($code)
     {
         http_response_code($code);
     }
 
+    /**
+     * @deprecated since 3.0, use the response array; removed in 4.0
+     */
+    public function codeOk()
+    {
+        $this->code(200);
+    }
 
     /**
-     * HTTP Status Code:
-     *
-     * @link http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
-     * @link http://restpatterns.org/HTTP_Status_Codes
-     *
-     * REST Pattern
-     * @link http://restpatterns.org/
+     * @deprecated since 3.0, use the response array; removed in 4.0
      */
-    public function codeOk() 
-    {
-        header("HTTP/1.1 200 OK");
-    }
-
     public function codeCreated()
     {
-        header('HTTP/1.1 201 Created');
+        $this->code(201);
     }
 
+    /**
+     * @deprecated since 3.0, use the response array; removed in 4.0
+     */
     public function codeAccepted()
     {
-        header('HTTP/1.1 202 Accepted');
+        $this->code(202);
     }
 
-    public function codeNoContent() 
+    /**
+     * @deprecated since 3.0, use the response array; removed in 4.0
+     */
+    public function codeNoContent()
     {
-        header('HTTP/1.1 204 No Content');
+        $this->code(204);
     }
 
+    /**
+     * @deprecated since 3.0, use the response array; removed in 4.0
+     */
     public function codeBadRequest()
     {
-        header('HTTP/1.1 400 Bad Request');
+        $this->code(400);
     }
 
+    /**
+     * @deprecated since 3.0, use the response array; removed in 4.0
+     */
     public function codeForbidden()
     {
-        header('HTTP/1.1 403 Forbidden');
+        $this->code(403);
     }
 
+    /**
+     * @deprecated since 3.0, use the response array; removed in 4.0
+     */
     public function codeNotFound()
     {
-        header('HTTP/1.1 404 Not Found');
+        $this->code(404);
     }
 
     public function getClass()

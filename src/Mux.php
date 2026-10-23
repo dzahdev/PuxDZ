@@ -53,16 +53,18 @@ class Mux implements IteratorAggregate
     public $id;
 
     /**
-     * @var bool expand routes to parent mux.
+     * @var bool whether mount() copies the submux routes into this Mux; true by default.
      *
-     * When expand is enabled, all mounted Mux will expand the routes to the parent mux.
-     * This improves the dispatch performance when you have a lot of sub mux to dispatch.
+     * true (the default): mount() copies every submux route into this Mux with the mount
+     * pattern as prefix, and dispatch() matches the full path against each copied route, with
+     * no recursion into the submux.
      *
-     * When expand is enabled, the pattern comparison strategy for
-     * strings will match the full string.
+     * false: mount() adds one route for the mount pattern whose callback is the submux id
+     * (the submux is kept in $submux). A static mount pattern matches as a prefix of the path,
+     * a PCRE mount pattern is compiled with PatternCompiler::compilePrefix(); dispatch() then
+     * dispatches the rest of the path in the submux.
      *
-     * When expand is disabled, the pattern comparison strategy for
-     * strings will match the prefix.
+     * CHANGES.md of 2.0 describes expand as disabled; the code has always defaulted to true.
      */
     public $expand = true;
 
