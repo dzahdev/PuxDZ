@@ -5,10 +5,10 @@ declare(strict_types=1);
 /*
  * Controller expansion: mount() turns the public *Action methods of an ExpandableController
  * into routes under the mount path. The path comes from the #[Route] attribute, else from the
- * method name (helloAction is /hello, indexAction is the mount path itself).
+ * method name: indexAction is the mount path itself, helloAction is /hello, pageUpdateAction is
+ * /page/update.
  *
- *     php eg/expand.php              prints the responses of /my, /my/hello and /my/foo
- *     php eg/expand.php /my/hello    prints the response of /my/hello
+ *     php eg/expand.php
  */
 
 namespace Pux\Examples;
@@ -26,26 +26,43 @@ final class MyController extends ExpandableController
 {
     public function indexAction(): string
     {
-        return 'MyController::indexAction()';
+        return 'index';
     }
 
     public function helloAction(): string
     {
-        return 'MyController::helloAction()';
+        return 'hello';
     }
 
-    #[Route('/foo', method: RequestMethod::GET)]
-    public function overrideAction(): string
+    public function pageUpdateAction(): string
     {
-        return 'MyController::overrideAction() at /foo';
+        return 'page update';
+    }
+
+    #[Route('/items/:id', method: RequestMethod::POST)]
+    public function saveAction(int $id): string
+    {
+        return "item $id saved";
     }
 }
 
 $mux = new Mux();
 $mux->mount('/my', new MyController());
 
-$paths = isset($argv[1]) ? [$argv[1]] : ['/my', '/my/hello', '/my/foo'];
-foreach ($paths as $path) {
-    $route = $mux->dispatch($path, new RouteRequest('GET', $path));
-    printf("%s => %s\n", $path, $route === null ? '404' : RouteExecutor::execute($route));
+$requests = [
+    RouteRequest::create('GET', '/my'),
+    RouteRequest::create('GET', '/my/hello'),
+    RouteRequest::create('GET', '/my/page/update'),
+    RouteRequest::create('POST', '/my/items/5'),
+    RouteRequest::create('GET', '/my/items/5'),
+];
+
+foreach ($requests as $request) {
+    $route = $mux->dispatchRequest($request);
+    printf(
+        "%s %s => %s\n",
+        $request->getRequestMethod(),
+        $request->getPath(),
+        $route === null ? 'no route' : RouteExecutor::execute($route),
+    );
 }

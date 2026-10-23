@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Runs every eg/*.php and fails when one exits non-zero or writes to stderr (PHP warnings,
-# notices and deprecations are reported on stderr with error_reporting=-1).
+# Runs every eg/*.php and fails when one exits non-zero, writes to stderr (PHP warnings,
+# notices and deprecations are reported on stderr with error_reporting=-1), has no expected
+# output file eg/<name>.out, or prints anything other than the content of that file.
 #
 #   bin/run-examples                          in docker, image php:8.3-cli
 #   PHP_IMAGE=php:8.2-cli bin/run-examples    in docker, another PHP version
@@ -33,18 +34,26 @@ else
 fi
 
 stderr_file="$(mktemp)"
-trap 'rm -f "$stderr_file"' EXIT
+stdout_file="$(mktemp)"
+trap 'rm -f "$stderr_file" "$stdout_file"' EXIT
 
 failed=0
 for example in "$project_root"/eg/*.php; do
     name="eg/$(basename -- "$example")"
-    if ! run_php "$name" >/dev/null 2>"$stderr_file"; then
+    expected="${example%.php}.out"
+    if [ ! -f "$expected" ]; then
+        echo "FAIL $name: no expected output file ${name%.php}.out" >&2
+        failed=1
+    elif ! run_php "$name" >"$stdout_file" 2>"$stderr_file"; then
         echo "FAIL $name: non-zero exit" >&2
         cat "$stderr_file" >&2
         failed=1
     elif [ -s "$stderr_file" ]; then
         echo "FAIL $name: output on stderr" >&2
         cat "$stderr_file" >&2
+        failed=1
+    elif ! diff -u "$expected" "$stdout_file" >&2; then
+        echo "FAIL $name: output differs from ${name%.php}.out" >&2
         failed=1
     else
         echo "ok   $name"

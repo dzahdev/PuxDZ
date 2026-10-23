@@ -1,0 +1,8 @@
+/blog/2026/10 => blog {"year":"2026","month":"10"}
+/blog/2026/10/release => blog {"year":"2026","month":"10","slug":"release"}
+/product/42.json => product {"id":"42","format":"json"}
+/product/42 => product {"id":"42"}
+/product/abc => no route
+/files/docs/a/b.txt => files {"path":"docs/a/b.txt"}
+/my documents/cv => documents {"name":"cv"}
+/mydocuments/cv => no route

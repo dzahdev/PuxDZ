@@ -1,0 +1,12 @@
+expand = true: 5 routes in the parent Mux
+  /users/bob/profile => profile of bob
+  /users/bob/posts/7 => post 7 of bob
+  /pages => page index
+  /pages/contact => contact page
+  /api/status => api ok
+expand = false: 3 routes in the parent Mux
+  /users/bob/profile => profile of bob
+  /users/bob/posts/7 => post 7 of bob
+  /pages => page index
+  /pages/contact => contact page
+  /api/status => api ok

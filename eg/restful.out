@@ -1,0 +1,5 @@
+GET /api/products => list products
+POST /api/products => create a product
+GET /api/products/3 => load product 3
+POST /api/products/3 => update product 3
+DELETE /api/products/3 => delete product 3

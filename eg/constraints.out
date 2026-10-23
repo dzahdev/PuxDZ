@@ -1,0 +1,7 @@
+PUT /items => replaceItems
+GET /items => listItems
+POST /items => no route
+GET https://admin.example.com/admin => admin
+GET http://admin.example.com/admin => no route
+GET https://www.example.com/admin => no route
+/about without a request => about

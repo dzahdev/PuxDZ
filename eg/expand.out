@@ -1,0 +1,5 @@
+GET /my => index
+GET /my/hello => hello
+GET /my/page/update => page update
+POST /my/items/5 => item 5 saved
+GET /my/items/5 => no route
